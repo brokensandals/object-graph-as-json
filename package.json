@@ -1,0 +1,23 @@
+{
+  "name": "object-graph-as-json",
+  "version": "1.0.0",
+  "description": "Library for representing arbitrary javascript objects in JSON.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brokensandals/object-graph-as-json.git"
+  },
+  "keywords": [
+    "serialize",
+    "json"
+  ],
+  "author": "Jacob Williams <jacobaw@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/brokensandals/object-graph-as-json/issues"
+  },
+  "homepage": "https://github.com/brokensandals/object-graph-as-json#readme"
+}
