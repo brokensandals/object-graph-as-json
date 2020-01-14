@@ -18,26 +18,33 @@ Goals:
 
 ## Spec
 
-Numbers, strings, booleans, and `null` are unchanged by encoding.
+Numbers (excluding `NaN` and `Infinity`), strings, booleans, and `null` are unchanged by encoding.
 
 Everything else is encoded to a wrapper object which contains, at minimum, a string field named `type`.
 Allowed values for `type` are:
 
-- `undefined`
+- `builtin`
 - `bigint`
 - `symbol`
 - `array`
 - `function`
 - `object`
 - `ref`
+- `unknown`
 
-Except for `undefined`, `bigint`, and `ref`, all of these objects will also contain a numeric field named `id`.
+Except for `builtin`, `bigint`, `ref`, and `unknown`, all of these objects will also contain a numeric field named `id`.
 If an invocation of the encoder encounters the same object (in the sense of identity - i.e., it is the same single object in memory) more than once, all but the first occurrence will be encoded as `ref`s.
 Each `id` is unique within the context of the output of one invocation of the encoder.
 
-## undefined
+## builtin
 
-The value `undefined` is always encoded as `{"type": "undefined"}`.
+Certain values are recognized and simply referred to by name using a wrapper object with two fields:
+
+- `type` = `"builtin"`
+- `name`: one of the following names:
+  - `Infinity`
+  - `NaN`
+  - `Undefined`
 
 ## bigint
 
@@ -113,10 +120,17 @@ Otherwise, the properties are represented by an array of objects, each of which 
 - `enumerable`: boolean indicating whether the property is enumerable; may be omitted if `true`
 - `configurable`: boolean indicating whether the property is configurable; may be omitted if `true`
 
-## Refs
+## ref
 
 While recursively encoding an object, if any object appears more than once, the content of the object will only be encoded the first time.
 On subsequent encounters, it's encoded as a wrapper object with two fields:
 
 - `type` = `"ref"`
 - `toId`: the `id` that was used the first time the object was encoded
+
+## unknown
+
+If the encoder encounters a value whose `typeof` it does not recognize, it simply returns a wrapper object with two fields:
+
+- `type` = `"unknown"`
+- `typeof`: the result of `typeof`

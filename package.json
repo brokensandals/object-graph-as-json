@@ -2,9 +2,10 @@
   "name": "object-graph-as-json",
   "version": "1.0.0",
   "description": "Library for representing arbitrary javascript objects in JSON.",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "repository": {
     "type": "git",
@@ -19,5 +20,10 @@
   "bugs": {
     "url": "https://github.com/brokensandals/object-graph-as-json/issues"
   },
-  "homepage": "https://github.com/brokensandals/object-graph-as-json#readme"
+  "homepage": "https://github.com/brokensandals/object-graph-as-json#readme",
+  "devDependencies": {
+    "@babel/core": "^7.8.3",
+    "@babel/preset-env": "^7.8.3",
+    "jest": "^24.9.0"
+  }
 }
