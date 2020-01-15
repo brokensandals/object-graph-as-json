@@ -30,6 +30,6 @@ export const builtins = [
 ];
 
 export const builtinsByValue = new Map(builtins);
-export const builtinsById = new Map(builtins.map(([a, b]) => [b, a]));
+export const builtinsByName = new Map(builtins.map(([a, b]) => [b, a]));
 
 export default builtins;
