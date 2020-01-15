@@ -166,17 +166,6 @@ describe('Encoder', () => {
     test('with extra properties', () => {
       const array = ['hello', 'world'];
       array.foo = 'bar';
-      expect(encoder.encode(array)).toEqual({
-        type: 'array',
-        id: 1,
-        '.0': 'hello',
-        '.1': 'world',
-        '.foo': 'bar',
-      });
-    });
-
-    test('with symbol properties', () => {
-      const array = ['hello', 'world'];
       const sym = Symbol('meep');
       array[sym] = 'hi';
       expect(encoder.encode(array)).toEqual({
@@ -191,6 +180,7 @@ describe('Encoder', () => {
         }],
         '.0': 'hello',
         '.1': 'world',
+        '.foo': 'bar',
       });
     });
 
@@ -376,6 +366,54 @@ describe('Encoder', () => {
       });
       expect(foo.toString()).toEqual('boo');
       expect(encoded.source).toEqual('function foo(a, b) {\n        return a + b;\n      }')
+    });
+
+    test('with extra properties', () => {
+      function foo(a, b) {
+        return a + b;
+      }
+      foo.bar = 'meh';
+      const sym = Symbol('meep');
+      foo[sym] = 'hi';
+      expect(encoder.encode(foo)).toEqual({
+        type: 'function',
+        id: 1,
+        source: 'function foo(a, b) {\n        return a + b;\n      }',
+        symbols: [
+          {
+            key: { type: 'symbol', id: 3, description: 'meep' },
+            value: 'hi',
+            writable: true,
+            enumerable: true,
+            configurable: true,
+          }
+        ],
+        '.length': {
+          type: 'property',
+          value: 2,
+          configurable: true,
+        },
+        '.name': {
+          type: 'property',
+          value: 'foo',
+          configurable: true,
+        },
+        '.prototype': {
+          type: 'property',
+          value: {
+            type: 'object',
+            id: 2,
+            '.constructor': {
+              type: 'property',
+              value: { type: 'ref', id: 1 },
+              configurable: true,
+              writable: true,
+            },
+          },
+          writable: true,
+        },
+        '.bar': 'meh',
+      });
     });
   });
 });
