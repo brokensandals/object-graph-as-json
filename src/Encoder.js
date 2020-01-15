@@ -20,6 +20,14 @@ for (const symbol of wellKnownSymbols) {
   builtins.set(symbol, symbol.description);
 }
 
+// Constructors and prototypes
+builtins.set(Array, 'Array');
+builtins.set(Array.prototype, 'Array prototype');
+builtins.set(Function, 'Function');
+builtins.set(Function.prototype, 'Function.prototype');
+builtins.set(Object, 'Object');
+builtins.set(Object.prototype, 'Object.prototype');
+
 export class Encoder {
   constructor() {
     this.objectIds = new WeakMap();
@@ -52,28 +60,51 @@ export class Encoder {
   encode(value) {
     let refIds = null;
 
+    const encodeProp = desc => {
+      const prop = {};
+      if (desc.get) {
+        prop.get = recurse(desc.get);
+      }
+      if (desc.set) {
+        prop.set = recurse(desc.set);
+      }
+      if (!desc.get && !desc.set) {
+        prop.value = recurse(desc.value);
+      }
+      if (desc.writable) {
+        prop.writable = true;
+      }
+      if (desc.enumerable) {
+        prop.enumerable = true;
+      }
+      if (desc.configurable) {
+        prop.configurable = true;
+      }
+      return prop;
+    }
+
     const recurse = value => {
       if (value === null) {
         return null;
       } else if (Object.is(NaN, value)) {
-        return { type: 'builtin', name: 'NaN' };
+        return { name: 'NaN', type: 'builtin' };
       }
 
       const builtinName = builtins.get(value);
       if (builtinName) {
-        return { type: 'builtin', name: builtinName };
+        return { name: builtinName, type: 'builtin' };
       }
 
       const type = typeof value;
       switch (type) {
         case 'undefined':
-          return { 'type': 'builtin', 'name': 'undefined' };
+          return { name: 'undefined', type: 'builtin' };
         case 'boolean':
           return value;
         case 'number':
           return value;
         case 'bigint':
-          return { 'type': 'bigint', 'string': value.toString() };
+          return { string: value.toString(), type: 'bigint' };
         case 'string':
           return value;
         case 'symbol':
@@ -84,11 +115,11 @@ export class Encoder {
               refIds = new Set();
             }
             if (refIds.has(id)) {
-              return { type: 'ref', id };
+              return { toId: id, type: 'ref' };
             }
 
             refIds.add(id);
-            return { type, id, description: value.description };
+            return { description: value.description, id, type };
           }
         case 'function':
         case 'object':
@@ -99,52 +130,59 @@ export class Encoder {
               refIds = new Set();
             }
             if (refIds.has(id)) {
-              return { type: 'ref', id };
+              return { toId: id, type: 'ref' };
             }
 
             refIds.add(id);
             
-            const result = { id };
+            const result = { id, type: 'object' };
 
             const constructor = value.constructor;
             const prototype = Object.getPrototypeOf(value);
             const propNames = Object.getOwnPropertyNames(value);
             const propSyms = Object.getOwnPropertySymbols(value);
 
-            // Check for simple arrays
+            let impliedConstructor = Object;
+            let impliedPrototype = Object.prototype;
             if (typeof value === 'object' &&
                 constructor === Array &&
-                prototype === Array.prototype &&
-                propSyms.length === 0) {
+                prototype === Array.prototype) {
               const lengthDesc = Object.getOwnPropertyDescriptor(value, 'length');
-              const length = lengthDesc ? lengthDesc.value : null;
               if (lengthDesc &&
-                  lengthDesc.writable &&
-                  !lengthDesc.enumerable &&
-                  !lengthDesc.configurable &&
-                  length == propNames.length - 1) {
-                let i;
-                for (i = 0; i < length; i++) {
-                  const name = propNames[i]
-                  if (i != name) {
-                    break;
-                  }
+                  propNames.length == lengthDesc.value + 1 &&
+                  propNames[propNames.length - 2] == lengthDesc.value - 1 &&
+                  lengthDesc.value >= 0) {
+                result.type = 'array';
+                impliedConstructor = Array;
+                impliedPrototype = Array.prototype;
+                propNames.pop(); // remove the 'length' property before encoding
+              }
+            }
 
-                  const desc = Object.getOwnPropertyDescriptor(value, name);
-                  if (!desc.writable ||
-                      !desc.enumerable ||
-                      !desc.configurable ||
-                      desc.get ||
-                      desc.set) {
-                    break;
-                  }
-                }
+            if (constructor !== impliedConstructor) {
+              result.constructor = recurse(constructor);
+            }
+            if (prototype !== impliedPrototype) {
+              result.prototype = recurse(prototype);
+            }
 
-                if (i == length) {
-                  result.type = 'array';
-                  result.elements = value.map(recurse);
-                  return result;
-                }
+            for (const name of propNames) {
+              const desc = Object.getOwnPropertyDescriptor(value, name);
+              const newName = `.${name}`;
+              if (desc.writable && desc.enumerable && desc.configurable &&
+                  !desc.get && !desc.set) {
+                result[newName] = recurse(desc.value);
+              } else {
+                result[newName] = encodeProp(prop);
+              }
+            }
+
+            if (propSyms.length > 0) {
+              const props = [];
+              for (const sym of propSyms) {
+                const prop = encodeProp(Object.getOwnPropertyDescriptor(sym));
+                prop.key = recurse(sym);
+                result.symbolProps = props;
               }
             }
 

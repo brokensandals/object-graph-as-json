@@ -82,7 +82,8 @@ describe('Encoder', () => {
       expect(encoder.encode(['hello', 'world'])).toEqual({
         type: 'array',
         id: 1,
-        elements: ['hello', 'world'],
+        ".0": 'hello',
+        ".1": 'world',
       });
     });
   });
