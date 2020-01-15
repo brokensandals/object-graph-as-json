@@ -66,7 +66,6 @@ Symbols are encoded to an object with three fields:
 If an array meets all the following conditions:
 
 - Its `typeof` is `object`
-- Its constructor is `Array`
 - Its prototype is `Array.prototype`
 - Its `length` field is writable but not enumerable or configurable, and not an accessor
 - Its highest index is its `length` field minus 1
@@ -76,7 +75,6 @@ Then it may be encoded to an object with `type` = `"array"`.
 These should be interpreted in the same way as `type` = `"object"` except:
 
 - The original object's `typeof` is implied to be `object`.
-- The `constructor` field will not be included, since it is implied to be `Array`.
 - The `prototype` field will not be included, since it is implied to be `Array.prototype`.
 - The `length` field will not be included, since it is assumed to equal the highest index plus 1 and to be writable but not enumerable or configurable and not an accessor.
 
@@ -87,7 +85,6 @@ This is equivalent to `type` = `"object"` except:
 
 - The original object's `typeof` is implied to be `function`.
 - A `source` field is added containing the source code of the function as a string, to the best of the encoder's ability to determine it.
-- `constructor` is assumed to be `Function` if it is absent.
 - `prototype` is assumed to be `Function.prototype` if it is absent.
 
 ## object
@@ -96,8 +93,6 @@ Objects are encoded to objects with the following fields:
 
 - `type` = `"object"`
 - `id`
-- `constructor`: The encoded result of calling `.constructor` on the object.
-  May be omitted if it is `Object`.
 - `prototype`: The encoded result of calling `Object.getPrototypeOf` on the object.
   May be omitted if it is `Object.prototype`.
 - `symbolProps`: The properties of the object whose keys are symbols, as described below.

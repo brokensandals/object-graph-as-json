@@ -137,16 +137,13 @@ export class Encoder {
             
             const result = { id, type: 'object' };
 
-            const constructor = value.constructor;
             const prototype = Object.getPrototypeOf(value);
             const propNames = Object.getOwnPropertyNames(value);
             const propSyms = Object.getOwnPropertySymbols(value);
 
-            let impliedConstructor = Object;
             let impliedPrototype = Object.prototype;
             let skipLengthProp = false;
             if (typeof value === 'object' &&
-                constructor === Array &&
                 prototype === Array.prototype) {
               const lengthDesc = Object.getOwnPropertyDescriptor(value, 'length');
               const lengthIndex = propNames.indexOf('length');
@@ -154,20 +151,15 @@ export class Encoder {
                   propNames[lengthIndex - 1] == lengthDesc.value - 1 &&
                   lengthDesc.value >= 0) {
                 result.type = 'array';
-                impliedConstructor = Array;
                 impliedPrototype = Array.prototype;
                 skipLengthProp = true;
               }
             } else if (typeof value === 'function') {
-              impliedConstructor = Function;
               impliedPrototype = Function.prototype;
               result.type = 'function';
               result.source = Function.prototype.toString.apply(value);
             }
 
-            if (constructor !== impliedConstructor) {
-              result.constructor = recurse(constructor);
-            }
             if (prototype !== impliedPrototype) {
               result.prototype = recurse(prototype);
             }

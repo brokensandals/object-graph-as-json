@@ -140,7 +140,6 @@ describe('Encoder', () => {
       expect(encoder.encode(array)).toEqual({
         type: 'object',
         id: 1,
-        constructor: { type: 'builtin', name: 'Array' },
         prototype: { type: 'builtin', name: 'Array.prototype' },
         '.length': {
           type: 'property',
@@ -201,15 +200,15 @@ describe('Encoder', () => {
       const weird = { isThisNormal: 'no' };
       array.constructor = weird;
       expect(encoder.encode(array)).toEqual({
-        type: 'object',
+        type: 'array',
         id: 1,
-        constructor: {
-          type: 'object',
-          '.isThisNormal': 'no',
-        },
-        prototype: { type: 'builtin', name: 'Array.prototype' },
         '.0': 'hello',
         '.1': 'world',
+        '.constructor': {
+          type: 'object',
+          id: 2,
+          '.isThisNormal': 'no',
+        },
       });
     });
   });
@@ -242,7 +241,6 @@ describe('Encoder', () => {
           value: {
             type: 'object',
             id: 2,
-            constructor: { type: 'ref', id: 1 },
             '.constructor': {
               type: 'property',
               value: { type: 'ref', id: 1 },
