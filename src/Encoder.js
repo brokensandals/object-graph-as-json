@@ -1,32 +1,4 @@
-const builtins = new Map();
-builtins.set(Infinity, 'Infinity');
-// Well-known symbols - https://tc39.es/ecma262/#sec-well-known-symbols
-const wellKnownSymbols = [
-  Symbol.asyncIterator,
-  Symbol.hasInstance,
-  Symbol.isConcatSpreadable,
-  Symbol.iterator,
-  Symbol.match,
-  Symbol.matchAll,
-  Symbol.replace,
-  Symbol.search,
-  Symbol.species,
-  Symbol.split,
-  Symbol.toPrimitive,
-  Symbol.toStringTag,
-  Symbol.unscopables,
-]
-for (const symbol of wellKnownSymbols) {
-  builtins.set(symbol, symbol.description);
-}
-
-// Constructors and prototypes
-builtins.set(Array, 'Array');
-builtins.set(Array.prototype, 'Array.prototype');
-builtins.set(Function, 'Function');
-builtins.set(Function.prototype, 'Function.prototype');
-builtins.set(Object, 'Object');
-builtins.set(Object.prototype, 'Object.prototype');
+import { builtinsByValue } from './builtins';
 
 export class Encoder {
   constructor() {
@@ -86,11 +58,9 @@ export class Encoder {
     const recurse = value => {
       if (value === null) {
         return null;
-      } else if (Object.is(NaN, value)) {
-        return { name: 'NaN', type: 'builtin' };
       }
 
-      const builtinName = builtins.get(value);
+      const builtinName = builtinsByValue.get(value);
       if (builtinName) {
         return { name: builtinName, type: 'builtin' };
       }
