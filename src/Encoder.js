@@ -33,7 +33,7 @@ export class Encoder {
     let refIds = null;
 
     const encodeProp = desc => {
-      const prop = {};
+      const prop = { type: 'property' };
       if (desc.get) {
         prop.get = recurse(desc.get);
       }
@@ -80,15 +80,6 @@ export class Encoder {
         case 'symbol':
           {
             const id = this.internSymbol(value);
-            
-            if (!refIds) {
-              refIds = new Set();
-            }
-            if (refIds.has(id)) {
-              return { id, type: 'ref' };
-            }
-
-            refIds.add(id);
             return { description: value.description, id, type };
           }
         case 'function':
@@ -145,19 +136,21 @@ export class Encoder {
                   !desc.get && !desc.set) {
                 result[newName] = recurse(desc.value);
               } else {
-                result[newName] = { ...encodeProp(desc), type: 'property' };
+                result[newName] = encodeProp(desc);
               }
             }
 
-            if (propSyms.length > 0) {
-              const props = [];
-              for (const sym of propSyms) {
-                const key = recurse(sym);
+            for (const sym of propSyms) {
+              const symId = this.internSymbol(sym);
+              const newName = `<${symId}>${sym.description}`;
+              const desc = Object.getOwnPropertyDescriptor(value, sym);
+              if (desc.writable && desc.enumerable && desc.configurable &&
+                  !desc.get && !desc.set) {
+                result[newName] = recurse(desc.value);
+              } else {
                 const prop = encodeProp(Object.getOwnPropertyDescriptor(value, sym));
-                prop.key = key;
-                props.push(prop);
+                result[newName] = prop;
               }
-              result.symbols = props;
             }
 
             return result;

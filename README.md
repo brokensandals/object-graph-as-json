@@ -34,6 +34,7 @@ Allowed values for `type` are:
 
 Except for `builtin`, `bigint`, `ref`, and `unknown`, all of these objects will also contain a numeric field named `id`.
 If an invocation of the encoder encounters the same object (in the sense of identity - i.e., it is the same single object in memory) more than once, all but the first occurrence will be encoded as `ref`s.
+(That does not apply to symbols.)
 Each `id` is unique within the context of the output of one invocation of the encoder.
 
 ## builtin
@@ -95,25 +96,23 @@ Objects are encoded to objects with the following fields:
 - `id`
 - `prototype`: The encoded result of calling `Object.getPrototypeOf` on the object.
   May be omitted if it is `Object.prototype`.
-- `symbols`: The properties of the object whose keys are symbols, as described below.
-   Omitted if there are none.
-   This field is an array where each element is a property object as described below.
-- All of the original object's string-keyed properties are encoded as properties where the key is the original key prepended with a period, and the value is either the encoded value or a property object as described below.
+- All of the original object's properties are encoded as properties.
+  - If the key is a string, it is encoded as that string, but prefixed with `"."`.
+  - If the key is a symbol, it is encoded as `"<id>description"`, where `id` is the id that would be used if the symbol were [encoded as an object](#symbol), and `description` is the result of the symbol's `.description` property.
+  - The value is encoded as described in [Property Values](#property-values) below.
 
 ### Property Values
 
 If a property meets all the following conditions:
 
-- Its key is a string.
 - It is not an accessor.
 - It is writable, enumerable, and configurable.
 
 Then the encoded value will be stored directly on the object.
 Otherwise, a property object will be created, which has the following structure:
 
-- `type` = `"property"`: Omitted for entries of the `symbols` array, where it is implied.
-- `key`: Only present for symbol-keyed properties, where it is the encoded value of the key.
-- `value`: The encoded value of the property; omitted for accessor propertie.
+- `type` = `"property"`
+- `value`: The encoded value of the property; omitted for accessor properties.
 - `get`: The encoded value of the getter, if any, for accessor properties.
 - `set`: The encoded value of the setter, if any, for accessor properties.
 - `writable`: Boolean, may be omitted if false.
@@ -127,6 +126,8 @@ On subsequent encounters, it's encoded as a wrapper object with two fields:
 
 - `type` = `"ref"`
 - `id`: The `id` that was used the first time the object was encoded.
+
+Currently, the encoder does not use refs for symbols - symbols are simply duplicated (but each duplicate will have the same `id` if they represent the same original symbol).
 
 ## unknown
 
