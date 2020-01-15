@@ -33,26 +33,31 @@ export class Encoder {
     let refIds = null;
 
     const encodeProp = desc => {
-      const prop = { type: 'property' };
-      if (desc.get) {
-        prop.get = recurse(desc.get);
+      if (desc.writable && desc.enumerable && desc.configurable &&
+        !desc.get && !desc.set) {
+        return recurse(desc.value);
+      } else {
+        const prop = { type: 'property' };
+        if (desc.get) {
+          prop.get = recurse(desc.get);
+        }
+        if (desc.set) {
+          prop.set = recurse(desc.set);
+        }
+        if (!desc.get && !desc.set) {
+          prop.value = recurse(desc.value);
+        }
+        if (desc.writable) {
+          prop.writable = true;
+        }
+        if (desc.enumerable) {
+          prop.enumerable = true;
+        }
+        if (desc.configurable) {
+          prop.configurable = true;
+        }
+        return prop;
       }
-      if (desc.set) {
-        prop.set = recurse(desc.set);
-      }
-      if (!desc.get && !desc.set) {
-        prop.value = recurse(desc.value);
-      }
-      if (desc.writable) {
-        prop.writable = true;
-      }
-      if (desc.enumerable) {
-        prop.enumerable = true;
-      }
-      if (desc.configurable) {
-        prop.configurable = true;
-      }
-      return prop;
     }
 
     const recurse = value => {
@@ -132,25 +137,14 @@ export class Encoder {
 
               const desc = Object.getOwnPropertyDescriptor(value, name);
               const newName = `.${name}`;
-              if (desc.writable && desc.enumerable && desc.configurable &&
-                  !desc.get && !desc.set) {
-                result[newName] = recurse(desc.value);
-              } else {
-                result[newName] = encodeProp(desc);
-              }
+              result[newName] = encodeProp(desc);
             }
 
             for (const sym of propSyms) {
               const symId = this.internSymbol(sym);
               const newName = `<${symId}>${sym.description}`;
               const desc = Object.getOwnPropertyDescriptor(value, sym);
-              if (desc.writable && desc.enumerable && desc.configurable &&
-                  !desc.get && !desc.set) {
-                result[newName] = recurse(desc.value);
-              } else {
-                const prop = encodeProp(Object.getOwnPropertyDescriptor(value, sym));
-                result[newName] = prop;
-              }
+              result[newName] = encodeProp(desc);
             }
 
             return result;
