@@ -75,6 +75,29 @@ describe('Encoder', () => {
       expect(encoder.encode(sym2)).toEqual(expected2);
       expect(encoder.encode(sym1)).toEqual(expected1);
     });
+
+    test('use refs for subsequent appearances', () => {
+      const sym1 = Symbol('meep');
+      const sym2 = Symbol('meep');
+      const expected1 = { type: 'symbol', id: 2, description: 'meep' };
+      const expected2 = { ...expected1, id: 3 };
+      const ref1 = { type: 'ref', toId: 2 };
+      const ref2 = { type: 'ref', toId: 3 };
+      const input = { a: sym1, b: sym2, c: { d: sym1 }, e: sym2 };
+      const expected = {
+        type: 'object',
+        id: 1,
+        '.a': expected1,
+        '.b': expected2,
+        '.c': {
+          type: 'object',
+          id: 4,
+          '.d': ref1,
+        },
+        '.e': ref2,
+      };
+      expect(encoder.encode(input)).toEqual(expected);
+    });
   });
 
   describe('arrays', () => {
