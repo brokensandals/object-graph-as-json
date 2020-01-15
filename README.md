@@ -20,8 +20,8 @@ Goals:
 
 Numbers (excluding `NaN` and `Infinity`), strings, booleans, and `null` are unchanged by encoding.
 
-Everything else is encoded to a wrapper object which contains, at minimum, a string field named `type`.
-Allowed values for `type` are:
+Everything else is encoded to an object which contains, at minimum, a string field named `$_type`.
+Allowed values for `$_type` are:
 
 - `builtin`
 - `bigint`
@@ -32,16 +32,16 @@ Allowed values for `type` are:
 - `ref`
 - `unknown`
 
-Except for `builtin`, `bigint`, `ref`, and `unknown`, all of these objects will also contain a numeric field named `id`.
+Except for `builtin`, `bigint`, `ref`, and `unknown`, all of these objects will also contain a numeric field named `$_id`.
 If an invocation of the encoder encounters the same object (in the sense of identity - i.e., it is the same single object in memory) more than once, all but the first occurrence will be encoded as `ref`s.
-Each `id` is unique within the context of the output of one invocation of the encoder.
+Each `$_id` is unique within the context of the output of one invocation of the encoder.
 
 ## builtin
 
 Certain values are recognized and simply referred to by name using a wrapper object with two fields:
 
-- `type` = `"builtin"`
-- `name`: one of the following names:
+- `$_type` = `"builtin"`
+- `$_name`: one of the following names:
   - `Infinity`
   - `NaN`
   - `Undefined`
@@ -50,16 +50,16 @@ Certain values are recognized and simply referred to by name using a wrapper obj
 
 BigInts are encoded to an object with two fields:
 
-- `type` = `"bigint"`
-- `string`: the result of calling `.toString()` on the BigInt
+- `$_type` = `"bigint"`
+- `$_string`: the result of calling `.toString()` on the BigInt
 
 ## symbol
 
 Symbols are encoded to an object with three fields:
 
-- `type` = `"symbol"`
-- `id`
-- `description`: the result of retrieving `.description` from the Symbol
+- `$_type` = `"symbol"`
+- `$_id`
+- `$_description`: the result of retrieving `.description` from the Symbol
 
 ## array
 
@@ -68,38 +68,45 @@ If an array meets all the following conditions:
 - Its `typeof` is `object`
 - Its constructor is `Array`
 - Its prototype is `Array.prototype`
-- Its indices begin at 0 and proceed sequentially without gaps
-- Its `length` field is writable but not enumerable or configurable
+- Its `length` field is writable but not enumerable or configurable, and not an accessor
 - Its highest index is its `length` field minus 1
-- It has no other fields
 
-Then it will be encoded to an object with three fields:
+Then it will be encoded to an object with `$_type` = `"array"`.
+These should be interpreted in the same way as `$_type` = `"object"` except:
 
-- `type` = `"array"`
-- `id`
-- `elements`: an array containing the encoded forms of each element, may be omitted for empty arrays
-
-Arrays that don't meet all those conditions are encoded using the `object` type below.
+- The original object's `typeof` is implied to be `object`.
+- The `$_constructor` field will not be included, since it is implied to be `Array`.
+- The `$_prototype` field will not be included, since it is implied to be `Array.prototype`.
+- The `length` field will not be included, since it is assumed to equal the highest index plus 1 and to be writable but not enumerable or configurable and not an accessor.
 
 ## function
 
-Anything whose `typeof` is `'function'` will be encoded to a wrapper object with `type` = `"function"`.
-This is equivalent to the `object` type wrapper object with the following differences:
+Anything whose `typeof` is `'function'` will be encoded to an object with `$_type` = `"function"`.
+This is equivalent to `$_type` = `"object"` except:
 
 - The original object's `typeof` is implied to be `function`.
-- A `source` field is added containing the source code of the function as a string, to the best of the encoder's ability to determine it.
-- `constructor` is assumed to be `Function` if it is absent.
-- `prototype` is assumed to be `Function.prototype` if it is absent.
+- A `$_source` field is added containing the source code of the function as a string, to the best of the encoder's ability to determine it.
+- `$_constructor` is assumed to be `Function` if it is absent.
+- `$_prototype` is assumed to be `Function.prototype` if it is absent.
 
 ## object
 
-Objects are encoded to wrapper objects with these fields:
+Objects are encoded to objects with the following fields:
 
-- `type` = `"object"`
-- `id`
-- `properties`: this can be either an object or an array as described below, and may be omitted for empty objects
-- `constructor`: the encoded value of the object's `.constructor` property; may be omitted if the constructor is `Object`
-- `prototype`: the encoded value of calling `Object.getPrototypeOf` for the object; may be omitted if the prototype is `Object.prototype`
+- `$_type` = `"object"`
+- `$_id`
+- `$_constructor`: The encoded result of calling `.constructor` on the object.
+  May be omitted if it is `Object`.
+- `$_prototype`: The encoded result of calling `Object.getPrototypeOf` on the object.
+  May be omitted if it is `Object.prototype`.
+- `$_stringProps`: Used if and only if some of the object's property names begin with `"$_"`.
+   When present, it will contain _all_ the properties of the object whose keys are strings; none of those properties will appear directly on this object.
+   This field is an object where the keys are the property names and the values are the encoded values of the properties, or property objects as described below.
+- `$_symbolProps`: The properties of the object whose keys are symbols, as described below.
+   Omitted if there are none.
+   This field is an array where each element is a property object as described below.
+
+All properties of the original object whose keys are strings will be included as fields on the encoded object, unless at least one of them has a name beginning with `"$_"`, in which case they will all 
 
 ### Properties
 
