@@ -95,7 +95,7 @@ Objects are encoded to objects with the following fields:
 - `id`
 - `prototype`: The encoded result of calling `Object.getPrototypeOf` on the object.
   May be omitted if it is `Object.prototype`.
-- `symbolProps`: The properties of the object whose keys are symbols, as described below.
+- `symbols`: The properties of the object whose keys are symbols, as described below.
    Omitted if there are none.
    This field is an array where each element is a property object as described below.
 - All of the original object's string-keyed properties are encoded as properties where the key is the original key prepended with a period, and the value is either the encoded value or a property object as described below.
@@ -111,7 +111,7 @@ If a property meets all the following conditions:
 Then the encoded value will be stored directly on the object.
 Otherwise, a property object will be created, which has the following structure:
 
-- `type` = `"property"`: Omitted for entries of the `symbolProps` array, where it is implied.
+- `type` = `"property"`: Omitted for entries of the `symbols` array, where it is implied.
 - `key`: Only present for symbol-keyed properties, where it is the encoded value of the key.
 - `value`: The encoded value of the property; omitted for accessor propertie.
 - `get`: The encoded value of the getter, if any, for accessor properties.

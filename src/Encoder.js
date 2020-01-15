@@ -186,7 +186,7 @@ export class Encoder {
                 prop.key = recurse(sym);
                 props.push(prop);
               }
-              result.symbolProps = props;
+              result.symbols = props;
             }
 
             return result;

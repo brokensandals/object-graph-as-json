@@ -182,7 +182,7 @@ describe('Encoder', () => {
       expect(encoder.encode(array)).toEqual({
         type: 'array',
         id: 1,
-        'symbolProps': [{
+        symbols: [{
           key: { type: 'symbol', id: 2, description: 'meep' },
           value: 'hi',
           writable: true,
