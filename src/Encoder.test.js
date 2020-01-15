@@ -211,6 +211,28 @@ describe('Encoder', () => {
         },
       });
     });
+
+    test('with different prototypes', () => {
+      const array = ['hello', 'world'];
+      const weird = { isThisNormal: 'no' };
+      Object.setPrototypeOf(array, weird);
+      expect(encoder.encode(array)).toEqual({
+        type: 'object',
+        id: 1,
+        prototype: {
+          type: 'object',
+          id: 2,
+          '.isThisNormal': 'no',
+        },
+        '.0': 'hello',
+        '.1': 'world',
+        '.length': {
+          type: 'property',
+          value: 2,
+          writable: true,
+        },
+      });
+    });
   });
 
   describe('functions', () => {
