@@ -152,8 +152,9 @@ export class Encoder {
             if (propSyms.length > 0) {
               const props = [];
               for (const sym of propSyms) {
+                const key = recurse(sym);
                 const prop = encodeProp(Object.getOwnPropertyDescriptor(value, sym));
-                prop.key = recurse(sym);
+                prop.key = key;
                 props.push(prop);
               }
               result.symbols = props;

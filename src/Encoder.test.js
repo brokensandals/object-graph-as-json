@@ -416,4 +416,381 @@ describe('Encoder', () => {
       });
     });
   });
+
+  describe('objects', () => {
+    test('simple', () => {
+      const obj = { foo: 'bar' };
+      expect(encoder.encode(obj)).toEqual({
+        type: 'object',
+        id: 1,
+        '.foo': 'bar',
+      });
+    });
+    
+    test('with different prototype', () => {
+      const obj = { foo: 'bar' };
+      Object.setPrototypeOf(obj, Function);
+      expect(encoder.encode(obj)).toEqual({
+        type: 'object',
+        id: 1,
+        prototype: { type: 'builtin', name: 'Function' },
+        '.foo': 'bar',
+      });
+    });
+
+    test('with circular references', () => {
+      const obj = {
+        name: 'first',
+        a: {
+          name: 'second',
+        },
+        b: {
+          name: 'third',
+        },
+        c: {
+          name: 'fourth',
+        },
+      };
+      obj.a.b = obj.b;
+      obj.b.a = obj.a;
+      obj.c.obj = obj;
+      expect(encoder.encode(obj)).toEqual({
+        type: 'object',
+        id: 1,
+        '.name': 'first',
+        '.a': {
+          type: 'object',
+          id: 2,
+          '.name': 'second',
+          '.b': {
+            type: 'object',
+            id: 3,
+            '.name': 'third',
+            '.a': { type: 'ref', id: 2 },
+          },
+        },
+        '.b': { type: 'ref', id: 3 },
+        '.c': {
+          type: 'object',
+          id: 4,
+          '.name': 'fourth',
+          '.obj': { type: 'ref', id: 1 },
+        },
+      });
+    });
+
+    describe('string properties', () => {
+      test('property object values are encoded', () => {
+        const obj = {};
+        Object.defineProperty(obj, 'foo', {
+          value: { parent: obj },
+          writable: false,
+          configurable: false,
+          enumerable: false,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          '.foo': {
+            type: 'property',
+            value: {
+              type: 'object',
+              id: 2,
+              '.parent': { type: 'ref', id: 1 },
+            },
+          },
+        });
+      });
+
+      test('with writable=false', () => {
+        const obj = {};
+        Object.defineProperty(obj, 'foo', {
+          value: 'bar',
+          writable: false,
+          configurable: true,
+          enumerable: true,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          '.foo': {
+            type: 'property',
+            value: 'bar',
+            configurable: true,
+            enumerable: true,
+          },
+        });
+      });
+
+      test('with configurable=false', () => {
+        const obj = {};
+        Object.defineProperty(obj, 'foo', {
+          value: 'bar',
+          writable: true,
+          configurable: false,
+          enumerable: true,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          '.foo': {
+            type: 'property',
+            value: 'bar',
+            writable: true,
+            enumerable: true,
+          },
+        });
+      });
+
+      test('with enumerable=false', () => {
+        const obj = {};
+        Object.defineProperty(obj, 'foo', {
+          value: 'bar',
+          writable: true,
+          configurable: true,
+          enumerable: false,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          '.foo': {
+            type: 'property',
+            value: 'bar',
+            writable: true,
+            configurable: true,
+          },
+        });
+      });
+
+      test('with a getter', () => {
+        function getter() {
+          return 'hi';
+        }
+        const obj = {};
+        Object.defineProperty(obj, 'foo', {
+          get: getter,
+          configurable: true,
+          enumerable: true,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          '.foo': {
+            type: 'property',
+            get: {
+              type: 'function',
+              id: 2,
+              source: getter.toString(),
+              '.length': {
+                type: 'property',
+                value: 0,
+                configurable: true,
+              },
+              '.name': {
+                type: 'property',
+                value: 'getter',
+                configurable: true,
+              },
+              '.prototype': {
+                type: 'property',
+                value: {
+                  type: 'object',
+                  id: 3,
+                  '.constructor': {
+                    type: 'property',
+                    value: { type: 'ref', id: 2 },
+                    writable: true,
+                    configurable: true,
+                  },
+                },
+                writable: true,
+              },
+            },
+            configurable: true,
+            enumerable: true,
+          },
+        });
+      });
+
+      test('with a setter', () => {
+        function setter(x) {
+          this.x = x;
+        }
+        const obj = {};
+        Object.defineProperty(obj, 'foo', {
+          set: setter,
+          configurable: true,
+          enumerable: true,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          '.foo': {
+            type: 'property',
+            set: {
+              type: 'function',
+              id: 2,
+              source: setter.toString(),
+              '.length': {
+                type: 'property',
+                value: 1,
+                configurable: true,
+              },
+              '.name': {
+                type: 'property',
+                value: 'setter',
+                configurable: true,
+              },
+              '.prototype': {
+                type: 'property',
+                value: {
+                  type: 'object',
+                  id: 3,
+                  '.constructor': {
+                    type: 'property',
+                    value: { type: 'ref', id: 2 },
+                    writable: true,
+                    configurable: true,
+                  },
+                },
+                writable: true,
+              },
+            },
+            configurable: true,
+            enumerable: true,
+          },
+        });
+      });
+    });
+
+    describe('symbol properties', () => {
+      test('property object values are encoded', () => {
+        const obj = {};
+        const sym = Symbol('foo');
+        Object.defineProperty(obj, sym, {
+          value: { parent: obj },
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          symbols: [{
+            key: { type: 'symbol', id: 2, description: 'foo' },
+            value: {
+              type: 'object',
+              id: 3,
+              '.parent': { type: 'ref', id: 1 },
+            },
+            writable: true,
+            configurable: true,
+            enumerable: true,
+          }],
+        });
+      });
+
+      test('with a getter', () => {
+        function getter() {
+          return 'hi';
+        }
+        const obj = {};
+        const sym = Symbol('foo');
+        Object.defineProperty(obj, sym, {
+          get: getter,
+          configurable: true,
+          enumerable: true,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          symbols: [{
+            key: { type: 'symbol', id: 2, description: 'foo' },
+            get: {
+              type: 'function',
+              id: 3,
+              source: getter.toString(),
+              '.length': {
+                type: 'property',
+                value: 0,
+                configurable: true,
+              },
+              '.name': {
+                type: 'property',
+                value: 'getter',
+                configurable: true,
+              },
+              '.prototype': {
+                type: 'property',
+                value: {
+                  type: 'object',
+                  id: 4,
+                  '.constructor': {
+                    type: 'property',
+                    value: { type: 'ref', id: 3 },
+                    writable: true,
+                    configurable: true,
+                  },
+                },
+                writable: true,
+              },
+            },
+            configurable: true,
+            enumerable: true,
+          }],
+        });
+      });
+
+      test('with a setter', () => {
+        function setter() {
+          return 'hi';
+        }
+        const obj = {};
+        const sym = Symbol('foo');
+        Object.defineProperty(obj, sym, {
+          set: setter,
+          configurable: true,
+          enumerable: true,
+        });
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          symbols: [{
+            key: { type: 'symbol', id: 2, description: 'foo' },
+            set: {
+              type: 'function',
+              id: 3,
+              source: setter.toString(),
+              '.length': {
+                type: 'property',
+                value: 0,
+                configurable: true,
+              },
+              '.name': {
+                type: 'property',
+                value: 'setter',
+                configurable: true,
+              },
+              '.prototype': {
+                type: 'property',
+                value: {
+                  type: 'object',
+                  id: 4,
+                  '.constructor': {
+                    type: 'property',
+                    value: { type: 'ref', id: 3 },
+                    writable: true,
+                    configurable: true,
+                  },
+                },
+                writable: true,
+              },
+            },
+            configurable: true,
+            enumerable: true,
+          }],
+        });
+      });
+    });
+  });
 });
