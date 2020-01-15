@@ -115,7 +115,7 @@ export class Encoder {
               refIds = new Set();
             }
             if (refIds.has(id)) {
-              return { toId: id, type: 'ref' };
+              return { id, type: 'ref' };
             }
 
             refIds.add(id);
@@ -130,7 +130,7 @@ export class Encoder {
               refIds = new Set();
             }
             if (refIds.has(id)) {
-              return { toId: id, type: 'ref' };
+              return { id, type: 'ref' };
             }
 
             refIds.add(id);

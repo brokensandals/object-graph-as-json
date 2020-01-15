@@ -81,8 +81,8 @@ describe('Encoder', () => {
       const sym2 = Symbol('meep');
       const expected1 = { type: 'symbol', id: 2, description: 'meep' };
       const expected2 = { ...expected1, id: 3 };
-      const ref1 = { type: 'ref', toId: 2 };
-      const ref2 = { type: 'ref', toId: 3 };
+      const ref1 = { type: 'ref', id: 2 };
+      const ref2 = { type: 'ref', id: 3 };
       const input = { a: sym1, b: sym2, c: { d: sym1 }, e: sym2 };
       const expected = {
         type: 'object',
@@ -118,7 +118,7 @@ describe('Encoder', () => {
         id: 1,
         '.0': 'hello',
         '.1': 'world',
-        '.2': { type: 'ref', toId: 1 },
+        '.2': { type: 'ref', id: 1 },
       });
     });
   });

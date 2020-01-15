@@ -131,7 +131,7 @@ While recursively encoding an object, if any object appears more than once, the 
 On subsequent encounters, it's encoded as a wrapper object with two fields:
 
 - `type` = `"ref"`
-- `toId`: the `id` that was used the first time the object was encoded
+- `id`: the `id` that was used the first time the object was encoded
 
 ## unknown
 
