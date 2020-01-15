@@ -76,4 +76,14 @@ describe('Encoder', () => {
       expect(encoder.encode(sym1)).toEqual(expected1);
     });
   });
+
+  describe('arrays', () => {
+    test('simple', () => {
+      expect(encoder.encode(['hello', 'world'])).toEqual({
+        type: 'array',
+        id: 1,
+        elements: ['hello', 'world'],
+      });
+    });
+  });
 });

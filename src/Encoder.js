@@ -77,23 +77,79 @@ export class Encoder {
         case 'string':
           return value;
         case 'symbol':
-          const id = this.internSymbol(value);
-          
-          if (!refIds) {
-            refIds = new Set();
-          }
-          if (refIds.has(id)) {
-            return { type: 'ref', id };
-          }
+          {
+            const id = this.internSymbol(value);
+            
+            if (!refIds) {
+              refIds = new Set();
+            }
+            if (refIds.has(id)) {
+              return { type: 'ref', id };
+            }
 
-          refIds.add(id);
-          return { type, id, description: value.description };
+            refIds.add(id);
+            return { type, id, description: value.description };
+          }
         case 'function':
-          // TODO
-          break;
         case 'object':
-          // TODO
-          break;
+          {
+            const id = this.internObject(value);
+
+            if (!refIds) {
+              refIds = new Set();
+            }
+            if (refIds.has(id)) {
+              return { type: 'ref', id };
+            }
+
+            refIds.add(id);
+            
+            const result = { id };
+
+            const constructor = value.constructor;
+            const prototype = Object.getPrototypeOf(value);
+            const propNames = Object.getOwnPropertyNames(value);
+            const propSyms = Object.getOwnPropertySymbols(value);
+
+            // Check for simple arrays
+            if (typeof value === 'object' &&
+                constructor === Array &&
+                prototype === Array.prototype &&
+                propSyms.length === 0) {
+              const lengthDesc = Object.getOwnPropertyDescriptor(value, 'length');
+              const length = lengthDesc ? lengthDesc.value : null;
+              if (lengthDesc &&
+                  lengthDesc.writable &&
+                  !lengthDesc.enumerable &&
+                  !lengthDesc.configurable &&
+                  length == propNames.length - 1) {
+                let i;
+                for (i = 0; i < length; i++) {
+                  const name = propNames[i]
+                  if (i != name) {
+                    break;
+                  }
+
+                  const desc = Object.getOwnPropertyDescriptor(value, name);
+                  if (!desc.writable ||
+                      !desc.enumerable ||
+                      !desc.configurable ||
+                      desc.get ||
+                      desc.set) {
+                    break;
+                  }
+                }
+
+                if (i == length) {
+                  result.type = 'array';
+                  result.elements = value.map(recurse);
+                  return result;
+                }
+              }
+            }
+
+            return result;
+          }
         default:
           return { type: 'unknown', typeof: type };
       }

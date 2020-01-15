@@ -65,6 +65,7 @@ Symbols are encoded to an object with three fields:
 
 If an array meets all the following conditions:
 
+- Its `typeof` is `object`
 - Its constructor is `Array`
 - Its prototype is `Array.prototype`
 - Its indices begin at 0 and proceed sequentially without gaps
