@@ -109,5 +109,17 @@ describe('Encoder', () => {
         ".1": 'world',
       });
     });
+
+    test('self-referencing', () => {
+      const array = ['hello', 'world'];
+      array.push(array);
+      expect(encoder.encode(array)).toEqual({
+        type: 'array',
+        id: 1,
+        '.0': 'hello',
+        '.1': 'world',
+        '.2': { type: 'ref', toId: 1 },
+      });
+    });
   });
 });
