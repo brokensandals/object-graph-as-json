@@ -121,6 +121,97 @@ describe('Encoder', () => {
         '.2': { type: 'ref', id: 1 },
       });
     });
+
+    test('with gaps', () => {
+      const array = ['a'];
+      array[2] = 'b';
+      expect(encoder.encode(array)).toEqual({
+        type: 'array',
+        id: 1,
+        '.0': 'a',
+        '.2': 'b',
+      });
+    });
+
+    test('with negative indices', () => {
+      // these are actually just extra properties
+      const array = [];
+      array[-4] = 'a';
+      expect(encoder.encode(array)).toEqual({
+        type: 'object',
+        id: 1,
+        constructor: { type: 'builtin', name: 'Array' },
+        prototype: { type: 'builtin', name: 'Array.prototype' },
+        '.length': {
+          type: 'property',
+          value: 0,
+          writable: true,
+        },
+        '.-4': 'a',
+      });
+    });
+
+    test('with negative and positive indices', () => {
+      // the negative indices are really just extra properties
+      const array = [];
+      array[-4] = 'a';
+      array[4] = 'b';
+      expect(encoder.encode(array)).toEqual({
+        type: 'array',
+        id: 1,
+        '.4': 'b',
+        '.-4': 'a',
+      });
+    });
+
+    test('with extra properties', () => {
+      const array = ['hello', 'world'];
+      array.foo = 'bar';
+      expect(encoder.encode(array)).toEqual({
+        type: 'array',
+        id: 1,
+        '.0': 'hello',
+        '.1': 'world',
+        '.foo': 'bar',
+      });
+    });
+
+    test('with symbol properties', () => {
+      const array = ['hello', 'world'];
+      const sym = Symbol('meep');
+      array[sym] = 'hi';
+      expect(encoder.encode(array)).toEqual({
+        type: 'array',
+        id: 1,
+        'symbolProps': [{
+          type: 'property',
+          key: { type: 'symbol', id: 2, description: 'meep' },
+          value: 'hi',
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        }],
+        '.0': 'hello',
+        '.1': 'world',
+      });
+    });
+
+    test('with different constructors', () => {
+      const array = ['hello', 'world'];
+      const weird = { isThisNormal: 'no' };
+      array.constructor = weird;
+      expect(encoder.encode(array)).toEqual({
+        type: 'object',
+        id: 1,
+        constructor: {
+          type: 'object',
+          '.isThisNormal': 'no',
+        },
+        prototype: { type: 'builtin', name: 'Array.prototype' },
+        '.0': 'hello',
+        '.1': 'world',
+      });
+    });
   });
 
   describe('functions', () => {

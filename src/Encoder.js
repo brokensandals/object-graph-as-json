@@ -22,7 +22,7 @@ for (const symbol of wellKnownSymbols) {
 
 // Constructors and prototypes
 builtins.set(Array, 'Array');
-builtins.set(Array.prototype, 'Array prototype');
+builtins.set(Array.prototype, 'Array.prototype');
 builtins.set(Function, 'Function');
 builtins.set(Function.prototype, 'Function.prototype');
 builtins.set(Object, 'Object');
@@ -144,18 +144,19 @@ export class Encoder {
 
             let impliedConstructor = Object;
             let impliedPrototype = Object.prototype;
+            let skipLengthProp = false;
             if (typeof value === 'object' &&
                 constructor === Array &&
                 prototype === Array.prototype) {
               const lengthDesc = Object.getOwnPropertyDescriptor(value, 'length');
+              const lengthIndex = propNames.indexOf('length');
               if (lengthDesc &&
-                  propNames.length == lengthDesc.value + 1 &&
-                  propNames[propNames.length - 2] == lengthDesc.value - 1 &&
+                  propNames[lengthIndex - 1] == lengthDesc.value - 1 &&
                   lengthDesc.value >= 0) {
                 result.type = 'array';
                 impliedConstructor = Array;
                 impliedPrototype = Array.prototype;
-                propNames.pop(); // remove the 'length' property before encoding
+                skipLengthProp = true;
               }
             } else if (typeof value === 'function') {
               impliedConstructor = Function;
@@ -172,6 +173,10 @@ export class Encoder {
             }
 
             for (const name of propNames) {
+              if (skipLengthProp && name === 'length') {
+                continue;
+              }
+
               const desc = Object.getOwnPropertyDescriptor(value, name);
               const newName = `.${name}`;
               if (desc.writable && desc.enumerable && desc.configurable &&
@@ -185,10 +190,11 @@ export class Encoder {
             if (propSyms.length > 0) {
               const props = [];
               for (const sym of propSyms) {
-                const prop = encodeProp(Object.getOwnPropertyDescriptor(sym));
+                const prop = encodeProp(Object.getOwnPropertyDescriptor(value, sym));
                 prop.key = recurse(sym);
-                result.symbolProps = props;
+                props.push(prop);
               }
+              result.symbolProps = props;
             }
 
             return result;
