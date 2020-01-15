@@ -668,6 +668,16 @@ describe('Encoder', () => {
         });
       });
 
+      test('well-known symbols', () => {
+        const obj = {};
+        obj[Symbol.toStringTag] = 'foo';
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: 1,
+          '@Symbol.toStringTag': 'foo',
+        });
+      });
+
       test('with writable=false', () => {
         const obj = {};
         const sym = Symbol('foo');

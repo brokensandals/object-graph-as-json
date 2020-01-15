@@ -141,8 +141,14 @@ export class Encoder {
             }
 
             for (const sym of propSyms) {
-              const symId = this.internSymbol(sym);
-              const newName = `<${symId}>${sym.description}`;
+              let newName;
+              const symBuiltinName = builtinsByValue.get(sym);
+              if (symBuiltinName) {
+                newName = `@${symBuiltinName}`;
+              } else {
+                const symId = this.internSymbol(sym);
+                newName = `<${symId}>${sym.description}`;
+              }
               const desc = Object.getOwnPropertyDescriptor(value, sym);
               result[newName] = encodeProp(desc);
             }

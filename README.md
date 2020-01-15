@@ -98,7 +98,8 @@ Objects are encoded to objects with the following fields:
   May be omitted if it is `Object.prototype`.
 - All of the original object's properties are encoded as properties.
   - If the key is a string, it is encoded as that string, but prefixed with `"."`.
-  - If the key is a symbol, it is encoded as `"<id>description"`, where `id` is the id that would be used if the symbol were [encoded as an object](#symbol), and `description` is the result of the symbol's `.description` property.
+  - If the key is a symbol and is a builtin, it is encoded as `"@name"`
+  - If the key is a symbol that is not a builtin, it is encoded as `"<id>description"`, where `id` is the id that would be used if the symbol were [encoded as an object](#symbol), and `description` is the result of the symbol's `.description` property.
   - The value is encoded as described in [Property Values](#property-values) below.
 
 ### Property Values
