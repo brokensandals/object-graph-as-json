@@ -1,4 +1,6 @@
 export const builtins = [
+  [undefined, 'undefined'],
+
   // Number-related
   [NaN, 'NaN'],
   [Infinity, 'Infinity'],
