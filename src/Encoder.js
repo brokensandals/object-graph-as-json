@@ -61,7 +61,7 @@ export class Encoder {
     let refIds = null;
 
     const encodeProp = desc => {
-      const prop = { type: 'property' };
+      const prop = {};
       if (desc.get) {
         prop.get = recurse(desc.get);
       }
@@ -175,7 +175,7 @@ export class Encoder {
                   !desc.get && !desc.set) {
                 result[newName] = recurse(desc.value);
               } else {
-                result[newName] = encodeProp(desc);
+                result[newName] = { ...encodeProp(desc), type: 'property' };
               }
             }
 

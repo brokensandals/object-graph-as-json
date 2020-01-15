@@ -41,7 +41,7 @@ Each `id` is unique within the context of the output of one invocation of the en
 Certain values are recognized and simply referred to by name using a wrapper object with two fields:
 
 - `type` = `"builtin"`
-- `name`: one of the following names:
+- `name`: One of the following names:
   - `Infinity`
   - `NaN`
   - `Undefined`
@@ -51,7 +51,7 @@ Certain values are recognized and simply referred to by name using a wrapper obj
 BigInts are encoded to an object with two fields:
 
 - `type` = `"bigint"`
-- `string`: the result of calling `.toString()` on the BigInt
+- `string`: The result of calling `.toString()` on the BigInt.
 
 ## symbol
 
@@ -59,17 +59,17 @@ Symbols are encoded to an object with three fields:
 
 - `type` = `"symbol"`
 - `id`
-- `description`: the result of retrieving `.description` from the Symbol
+- `description`: The result of retrieving `.description` from the Symbol.
 
 ## array
 
 If an array meets all the following conditions:
 
-- Its `typeof` is `object`
-- Its prototype is `Array.prototype`
-- Its `length` field is writable but not enumerable or configurable, and not an accessor
-- Its highest index is its `length` field minus 1
-- Its `length` field is >= 0
+- Its `typeof` is `object`.
+- Its prototype is `Array.prototype`.
+- Its `length` field is writable but not enumerable or configurable, and not an accessor.
+- Its highest index is its `length` field minus 1.
+- Its `length` field is >= 0.
 
 Then it may be encoded to an object with `type` = `"array"`.
 These should be interpreted in the same way as `type` = `"object"` except:
@@ -104,21 +104,21 @@ Objects are encoded to objects with the following fields:
 
 If a property meets all the following conditions:
 
-- Its key is a string
-- It is not an accessor
-- It is writable, enumerable, and configurable
+- Its key is a string.
+- It is not an accessor.
+- It is writable, enumerable, and configurable.
 
-then the encoded value will be stored directly on the object.
+Then the encoded value will be stored directly on the object.
 Otherwise, a property object will be created, which has the following structure:
 
-- `type` = `"property"`
-- `key`: only used for symbol-keyed properties, where it is the encoded value of the key
-- `value`: the encoded value of the property; omitted for accessor properties
-- `get`: the encoded value of the getter, if any, for accessor properties
-- `set`: the encoded value of the setter, if any, for accessor properties
-- `writable`: Boolean, may be omitted if false
-- `enumerable`: Boolean, may be omitted if false
-- `configurable`: Boolean, may be omitted if false
+- `type` = `"property"`: Omitted for entries of the `symbolProps` array, where it is implied.
+- `key`: Only present for symbol-keyed properties, where it is the encoded value of the key.
+- `value`: The encoded value of the property; omitted for accessor propertie.
+- `get`: The encoded value of the getter, if any, for accessor properties.
+- `set`: The encoded value of the setter, if any, for accessor properties.
+- `writable`: Boolean, may be omitted if false.
+- `enumerable`: Boolean, may be omitted if false.
+- `configurable`: Boolean, may be omitted if false.
 
 ## ref
 
@@ -126,11 +126,11 @@ While recursively encoding an object, if any object appears more than once, the 
 On subsequent encounters, it's encoded as a wrapper object with two fields:
 
 - `type` = `"ref"`
-- `id`: the `id` that was used the first time the object was encoded
+- `id`: The `id` that was used the first time the object was encoded.
 
 ## unknown
 
 If the encoder encounters a value whose `typeof` it does not recognize, it simply returns a wrapper object with two fields:
 
 - `type` = `"unknown"`
-- `typeof`: the result of `typeof`
+- `typeof`: The result of `typeof`.

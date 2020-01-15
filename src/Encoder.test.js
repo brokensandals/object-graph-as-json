@@ -183,7 +183,6 @@ describe('Encoder', () => {
         type: 'array',
         id: 1,
         'symbolProps': [{
-          type: 'property',
           key: { type: 'symbol', id: 2, description: 'meep' },
           value: 'hi',
           writable: true,
