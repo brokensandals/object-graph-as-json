@@ -273,5 +273,109 @@ describe('Encoder', () => {
         },
       });
     });
+
+    test('with different prototype', () => {
+      function foo(a, b) {
+        return a + b;
+      }
+      Object.setPrototypeOf(foo, Object);
+      expect(encoder.encode(foo)).toEqual({
+        type: 'function',
+        id: 1,
+        source: 'function foo(a, b) {\n        return a + b;\n      }',
+        prototype: { type: 'builtin', name: 'Object' },
+        '.length': {
+          type: 'property',
+          value: 2,
+          configurable: true,
+        },
+        '.name': {
+          type: 'property',
+          value: 'foo',
+          configurable: true,
+        },
+        '.prototype': {
+          type: 'property',
+          value: {
+            type: 'object',
+            id: 2,
+            '.constructor': {
+              type: 'property',
+              value: { type: 'ref', id: 1 },
+              configurable: true,
+              writable: true,
+            },
+          },
+          writable: true,
+        },
+      });
+    });
+
+    test('with different prototype property', () => {
+      function foo(a, b) {
+        return a + b;
+      }
+      foo.prototype = 'howdy';
+      expect(encoder.encode(foo)).toEqual({
+        type: 'function',
+        id: 1,
+        source: 'function foo(a, b) {\n        return a + b;\n      }',
+        '.length': {
+          type: 'property',
+          value: 2,
+          configurable: true,
+        },
+        '.name': {
+          type: 'property',
+          value: 'foo',
+          configurable: true,
+        },
+        '.prototype': {
+          type: 'property',
+          value: 'howdy',
+          writable: true,
+        },
+      });
+    });
+
+    test('with custom toString', () => {
+      let called = false;
+      function foo(a, b) {
+        return a + b;
+      }
+      function custom() {
+        called = true;
+        return 'boo';
+      }
+      custom.prototype = Object;
+      Object.setPrototypeOf(foo, { toString: custom });
+      const encoded = encoder.encode(foo);
+      expect(encoded.prototype).toEqual({
+        type: 'object',
+        id: 2,
+        '.toString': {
+          type: 'function',
+          id: 3,
+          source: 'function custom() {\n        called = true;\n        return \'boo\';\n      }',
+          '.length': {
+            type: 'property',
+            value: 0,
+            configurable: true,
+          },
+          '.name': {
+            type: 'property',
+            value: 'custom',
+            configurable: true,
+          },
+          '.prototype': {
+            type: 'property',
+            value: { type: 'builtin', name: 'Object' },
+            writable: true,
+          },
+        }
+      });
+      expect(foo.toString()).toEqual('boo');
+      expect(encoded.source).toEqual('function foo(a, b) {\n        return a + b;\n      }')
+    });
   });
 });
