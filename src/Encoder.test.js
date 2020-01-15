@@ -122,4 +122,46 @@ describe('Encoder', () => {
       });
     });
   });
+
+  describe('functions', () => {
+    test('simple', () => {
+      function foo(a, b) {
+        return a + b;
+      }
+
+      // TODO: I don't understand why the "arguments" and "caller" properties
+      // don't exist on foo even though they exist if I create a similar function
+      // in the console
+      expect(encoder.encode(foo)).toEqual({
+        type: 'function',
+        id: 1,
+        source: 'function foo(a, b) {\n        return a + b;\n      }',
+        '.length': {
+          type: 'property',
+          value: 2,
+          configurable: true,
+        },
+        '.name': {
+          type: 'property',
+          value: 'foo',
+          configurable: true,
+        },
+        '.prototype': {
+          type: 'property',
+          value: {
+            type: 'object',
+            id: 2,
+            constructor: { type: 'ref', id: 1 },
+            '.constructor': {
+              type: 'property',
+              value: { type: 'ref', id: 1 },
+              configurable: true,
+              writable: true,
+            },
+          },
+          writable: true,
+        },
+      });
+    });
+  });
 });

@@ -61,7 +61,7 @@ export class Encoder {
     let refIds = null;
 
     const encodeProp = desc => {
-      const prop = {};
+      const prop = { type: 'property' };
       if (desc.get) {
         prop.get = recurse(desc.get);
       }
@@ -157,6 +157,11 @@ export class Encoder {
                 impliedPrototype = Array.prototype;
                 propNames.pop(); // remove the 'length' property before encoding
               }
+            } else if (typeof value === 'function') {
+              impliedConstructor = Function;
+              impliedPrototype = Function.prototype;
+              result.type = 'function';
+              result.source = Function.prototype.toString.apply(value);
             }
 
             if (constructor !== impliedConstructor) {
@@ -173,7 +178,7 @@ export class Encoder {
                   !desc.get && !desc.set) {
                 result[newName] = recurse(desc.value);
               } else {
-                result[newName] = encodeProp(prop);
+                result[newName] = encodeProp(desc);
               }
             }
 
