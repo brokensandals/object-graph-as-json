@@ -1,2 +1,2 @@
 export { Encoder } from './Encoder';
-export { UnsafeDecoder } from './Decoder';
+export { UnsafeDecoder } from './UnsafeDecoder';
