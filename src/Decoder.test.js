@@ -726,4 +726,12 @@ describe('Decoder', () => {
       });
     });
   });
+
+  test('unknown types', () => {
+    const input = { type: 'garbage', foo: 'bar' };
+    expect(decoder.decode(input)).toEqual({
+      value: input,
+      failure: 'unknown type [garbage]',
+    });
+  });
 });

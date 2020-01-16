@@ -1,11 +1,11 @@
 import { builtinsByName } from './builtins';
 
 export class Decoder {
-  onFailure(value, message) {
+  onFailure(value, message, context) {
     throw new Error(message);
   }
 
-  onKeyFailure(container, key, message) {
+  onKeyFailure(container, key, message, context) {
     throw new Error(message);
   }
 
@@ -37,45 +37,49 @@ export class Decoder {
       case 'ref':
         return this.decodeRef(value, context);
       default:
-        return this.decodeOther(value, context);
+        return this.onFailure(value, `unknown type [${value.type}]`, context);
     }
   }
 
-  decodeBuiltin(value, { idMap }) {
+  decodeBuiltin(value, context) {
+    const { idMap } = context;
+
     if (!value.name) {
-      return this.onFailure(value, 'builtin is missing name');
+      return this.onFailure(value, 'builtin is missing name', context);
     }
 
     const builtin = builtinsByName.get(value.name);
     if (builtin === undefined && value.name !== 'undefined') {
-      return this.onFailure(value, `unrecognized builtin name [${value.name}]`);
+      return this.onFailure(value, `unrecognized builtin name [${value.name}]`, context);
     }
 
     return builtin;
   }
 
-  decodeBigint(value, { idMap }) {
+  decodeBigint(value, context) {
     if (!value.string) {
-      return this.onFailure(value, 'bigint is missing string');
+      return this.onFailure(value, 'bigint is missing string', context);
     }
 
     try {
       return BigInt(value.string);
     } catch (err) {
-      return this.onFailure(value, `error parsing bigint [${value.string}]: ${err}`);
+      return this.onFailure(value, `error parsing bigint [${value.string}]: ${err}`, context);
     }
   }
 
-  decodeSymbol(value, { idMap, seenIdSet }) {
+  decodeSymbol(value, context) {
+    const { idMap, seenIdSet } = context;
+
     if (!value.id) {
-      return this.onFailure(value, 'symbol is missing id');
+      return this.onFailure(value, 'symbol is missing id', context);
     }
 
     const existing = idMap.get(value.id);
     if (existing) {
       if (existing.description !== value.description) {
         return this.onFailure(value,
-          `symbol with id [${value.id}] has different description [${value.description}] than existing symbol with that id [${existing.description}]`);
+          `symbol with id [${value.id}] has different description [${value.description}] than existing symbol with that id [${existing.description}]`, context);
       }
       return existing;
     }
@@ -88,15 +92,15 @@ export class Decoder {
 
   decodeArray(value, context) {
     if (!value.id) {
-      return this.onFailure(value, 'array is missing id');
+      return this.onFailure(value, 'array is missing id', context);
     }
 
     if (value['prototype']) {
-      return this.onFailure(value, `array with id [${value.id}] has prototype property which should have been implied`);
+      return this.onFailure(value, `array with id [${value.id}] has prototype property which should have been implied`, context);
     }
 
     if (value['.length']) {
-      return this.onFailure(value, `array with id [${value.id}] has .length property which should have been implied`);
+      return this.onFailure(value, `array with id [${value.id}] has .length property which should have been implied`, context);
     }
 
     return this.decodeOntoObject(value, [], context);
@@ -104,11 +108,11 @@ export class Decoder {
 
   decodeFunction(value, context) {
     if (!value.id) {
-      return this.onFailure(value, 'function is missing id');
+      return this.onFailure(value, 'function is missing id', context);
     }
 
     if (!value.source) {
-      return this.onFailure(value, `function with id [${value.id}] is missing source`);
+      return this.onFailure(value, `function with id [${value.id}] is missing source`, context);
     }
 
     const wrapper = `return (${value.source});`;
@@ -116,7 +120,7 @@ export class Decoder {
     try {
       fn = (new Function(wrapper))();
     } catch (err) {
-      return this.onFailure(value, `function with id [${value.id}] could not be constructed: ${err}`);
+      return this.onFailure(value, `function with id [${value.id}] could not be constructed: ${err}`, context);
     }
 
     return this.decodeOntoObject(value, fn, context);
@@ -124,7 +128,7 @@ export class Decoder {
 
   decodeObject(value, context) {
     if (!value.id) {
-      return this.onFailure(value, 'object is missing id');
+      return this.onFailure(value, 'object is missing id', context);
     }
 
     return this.decodeOntoObject(value, {}, context);
@@ -134,7 +138,7 @@ export class Decoder {
     const { idMap, seenIdSet } = context;
 
     if (seenIdSet.has(value.id)) {
-      return this.onFailure(value, `id [${value.id}] has already been seen on another array, function, or object`);
+      return this.onFailure(value, `id [${value.id}] has already been seen on another array, function, or object`, context);
     }
 
     seenIdSet.add(value.id);
@@ -214,12 +218,12 @@ export class Decoder {
     if (typeof value === 'object' && value.type === 'property') {
       if (value.get === undefined && value.set === undefined) {
         if (value.value === undefined) {
-          return this.onFailure(value, 'property does not have get, set, or value');
+          return this.onFailure(value, 'property does not have get, set, or value', context);
         }
         descriptor.value = this.decode(value.value, context);
       } else {
         if (value.value !== undefined) {
-          return this.onFailure(value, 'property has both accessor and value');
+          return this.onFailure(value, 'property has both accessor and value', context);
         }
         if (value.get) {
           descriptor.get = this.decode(value.get, context);
@@ -246,18 +250,20 @@ export class Decoder {
     return descriptor;
   }
 
-  decodeRef(value, { idMap, seenIdSet }) {
+  decodeRef(value, context) {
+    const { idMap, seenIdSet } = context;
+
     if (!value.id) {
-      return this.onFailure(value, 'ref is missing id');
+      return this.onFailure(value, 'ref is missing id', context);
     }
 
     if (!seenIdSet.has(value.id)) {
-      return this.onFailure(value, `id [${value.id}] was first encountered on a ref`);
+      return this.onFailure(value, `id [${value.id}] was first encountered on a ref`, context);
     }
 
     const target = idMap.get(value.id);
     if (!target) {
-      return this.onFailure(value, `ref id [${value.id}] not found in idMap`);
+      return this.onFailure(value, `ref id [${value.id}] not found in idMap`, context);
     }
 
     return target;
