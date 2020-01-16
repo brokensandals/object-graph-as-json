@@ -95,12 +95,14 @@ describe('Decoder', () => {
       expect(decoder.decode(encoded, { idMap })).toBe(original);
     });
 
-    test('updates idMap', () => {
+    test('updates idMap and seenIdSet', () => {
       const original = Symbol();
       const encoded = encoder.encode(original);
       const idMap = new Map();
-      const actual = decoder.decode(encoded, { idMap });
+      const seenIdSet = new Set();
+      const actual = decoder.decode(encoded, { idMap, seenIdSet });
       expect(idMap.get(encoded.id)).toBe(actual);
+      expect(seenIdSet.has(encoded.id)).toBeTrue;
     });
 
     // TODO: test that symbols get reused when the same id appears multiple times in the input
