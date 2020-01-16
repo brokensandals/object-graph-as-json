@@ -5,6 +5,10 @@ export class Decoder {
     throw new Error(message);
   }
 
+  onKeyFailure(container, key, message) {
+    throw new Error(message);
+  }
+
   decode(value, context = {}) {
     if (typeof value !== 'object' || value === null) {
       return value;
@@ -98,6 +102,34 @@ export class Decoder {
     return decodeOntoObject(value, [], context);
   }
 
+  decodeFunction(value, context) {
+    if (!value.id) {
+      return this.onFailure(value, 'function is missing id');
+    }
+
+    if (!value.source) {
+      return this.onFailure(value, `function with id [${value.id}] is missing source`);
+    }
+
+    const wrapper = `return (${value.source});`;
+    let fn;
+    try {
+      fn = (new Function(wrapper))();
+    } catch (err) {
+      return this.onFailure(value, `function with id [${value.id}] could not be constructed: ${err}`);
+    }
+
+    return this.decodeOntoObject(value, fn, context);
+  }
+
+  decodeObject(value, context) {
+    if (!value.id) {
+      return this.onFailure(value, 'object is missing id');
+    }
+
+    return this.decodeOntoObject(value, {}, context);
+  }
+
   decodeOntoObject(value, target, context) {
     const { idMap, seenIdSet } = context;
 
@@ -132,26 +164,94 @@ export class Decoder {
       } else if (key.startsWith('@')) {
         const name = key.slice(1);
         const builtin = this.decodeBuiltin({ type: 'builtin', name }, context);
-        if (typeof builtin !== 'symbol') {
-          const failure = onFailure(key, `property key [${key}] did not correspond to a symbol`);
-          const failureKey = Symbol(`failure to decode key ${key}`);
-          Object.defineProperty(target, failureKey, {
-            writable: true,
-            enumerable: true,
-            configurable: true,
-            value: failure,
-          });
-          targetKey = Symbol(`failed to decode key ${key}`);
+        if (typeof builtin === 'symbol') {
+          targetKey = builtin;
+        } else {
+          targetKey = onKeyFailure(value, key, `key [${key}] does not refer to a symbol`);
         }
-        targetKey = builtin;
       } else if (key.startsWith('<')) {
-        const parts = key.slice(1).split('>');
-        if (parts.length !== 2 || parts[0].length < 1) {
-          const failure = onFailure(key, `property key [${key}] should follow format: <id>description`);
-          // TODO
+        const idEnd = key.indexOf('>');
+        if (idEnd > 1) {
+          const id = key.slice(1, idEnd);
+          const description = key.slice(idEnd + 1);
+          const sym = this.decodeSymbol({ type: 'symbol', id, description }, context);
+          if (typeof sym === 'symbol') {
+            targetKey = sym;
+          } else {
+            targetKey = onKeyFailure(value, key, `key [${key}] does not refer to a symbol`);
+          }
+        } else {
+          targetKey = onKeyFailure(value, key, `key [${key}] does not follow format <id>description`);
         }
-        // TODO
       }
+
+      // In case targetKey was set to the result of onKeyFailure, make sure it's
+      // something we can use.
+      if (targetKey === undefined) {
+        continue;
+      }
+      if (typeof targetKey !== 'string' && typeof targetKey !== 'symbol') {
+        throw new Error(`onKeyFailure for key [${key}] did not return undefined, string, or symbol`);
+      }
+
+      const descriptor = this.decodePropertyValue(value[key], context);
+      Object.defineProperty(target, targetKey, descriptor);
     }
+
+    return target;
+  }
+
+  decodePropertyValue(value, context) {
+    const descriptor = {};
+    if (typeof value === 'object' && value.type === 'property') {
+      if (value.get === undefined && value.set === undefined) {
+        if (value.value === undefined) {
+          return onFailure(value, 'property does not have get, set, or value');
+        }
+        descriptor.value = this.decode(value.value, context);
+      } else {
+        if (value.value !== undefined) {
+          return this.onFailure(value, 'property has both accessor and value');
+        }
+        if (value.get) {
+          descriptor.get = this.decode(value.get, context);
+        }
+        if (value.set) {
+          descriptor.set = this.decode(value.set, context);
+        }
+      }
+      if (value.configurable) {
+        descriptor.configurable = true;
+      }
+      if (value.enumerable) {
+        descriptor.enumerable = true;
+      }
+      if (value.writable) {
+        descriptor.writable = true;
+      }
+    } else {
+      descriptor.configurable = true;
+      descriptor.enumerable = true;
+      descriptor.writable = true;
+      descriptor.value = this.decode(value, context);
+    }
+    return descriptor;
+  }
+
+  decodeRef(value, { idMap, seenIdSet }) {
+    if (!value.id) {
+      return this.onFailure(value, 'ref is missing id');
+    }
+
+    if (!seenIdSet.has(value.id)) {
+      return this.onFailure(value, `id [${value.id}] was first encountered on a ref`);
+    }
+
+    const target = idMap.get(value.id);
+    if (!target) {
+      return this.onFailure(value, `ref id [${value.id}] not found in idMap`);
+    }
+
+    return target;
   }
 }
