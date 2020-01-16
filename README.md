@@ -32,7 +32,7 @@ Allowed values for `type` are:
 - `ref`
 - `unknown`
 
-Except for `builtin`, `bigint`, `ref`, and `unknown`, all of these objects will also contain a numeric field named `id`.
+Except for `builtin`, `bigint`, `ref`, and `unknown`, all of these objects will also contain a string field named `id`.
 If an invocation of the encoder encounters the same object (in the sense of identity - i.e., it is the same single object in memory) more than once, all but the first occurrence will be encoded as `ref`s.
 (That does not apply to symbols.)
 Each `id` is unique within the context of the output of one invocation of the encoder.
@@ -99,7 +99,9 @@ Objects are encoded to objects with the following fields:
 - All of the original object's properties are encoded as properties.
   - If the key is a string, it is encoded as that string, but prefixed with `"."`.
   - If the key is a symbol and is a builtin, it is encoded as `"@name"`
-  - If the key is a symbol that is not a builtin, it is encoded as `"<id>description"`, where `id` is the id that would be used if the symbol were [encoded as an object](#symbol), and `description` is the result of the symbol's `.description` property.
+  - If the key is a symbol that is not a builtin and does not have a description, it is encoded as `"~id"`, where `id` is the unique identifier assigned to the symbol for the purposes of encoding.
+  - If the key is a symbol that is not a builtin and has a description, it is encoded as `"~id|description"`.
+    Note that the description may be an empty string, which is different from having no description (`symbol.description === ''` vs `symbol.description === undefined`).
   - The value is encoded as described in [Property Values](#property-values) below.
 
 ### Property Values

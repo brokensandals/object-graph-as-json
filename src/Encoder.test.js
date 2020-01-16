@@ -60,7 +60,7 @@ describe('Encoder', () => {
     test('encode correctly', () => {
       expect(encoder.encode(Symbol('meep'))).toEqual({
         type: 'symbol',
-        id: 1,
+        id: '1',
         description: 'meep',
       });
     });
@@ -68,8 +68,8 @@ describe('Encoder', () => {
     test('reuse IDs across calls', () => {
       const sym1 = Symbol('meep');
       const sym2 = Symbol('meep');
-      const expected1 = { type: 'symbol', id: 1, description: 'meep' };
-      const expected2 = { ...expected1, id: 2 };
+      const expected1 = { type: 'symbol', id: '1', description: 'meep' };
+      const expected2 = { ...expected1, id: '2' };
       expect(encoder.encode(sym1)).toEqual(expected1);
       expect(encoder.encode(sym1)).toEqual(expected1);
       expect(encoder.encode(sym2)).toEqual(expected2);
@@ -79,17 +79,17 @@ describe('Encoder', () => {
     test('do not use refs', () => {
       const sym1 = Symbol('meep');
       const sym2 = Symbol('meep');
-      const expected1 = { type: 'symbol', id: 2, description: 'meep' };
-      const expected2 = { ...expected1, id: 3 };
+      const expected1 = { type: 'symbol', id: '2', description: 'meep' };
+      const expected2 = { ...expected1, id: '3' };
       const input = { a: sym1, b: sym2, c: { d: sym1 }, e: sym2 };
       const expected = {
         type: 'object',
-        id: 1,
+        id: '1',
         '.a': expected1,
         '.b': expected2,
         '.c': {
           type: 'object',
-          id: 4,
+          id: '4',
           '.d': expected1,
         },
         '.e': expected2,
@@ -102,7 +102,7 @@ describe('Encoder', () => {
     test('simple', () => {
       expect(encoder.encode(['hello', 'world'])).toEqual({
         type: 'array',
-        id: 1,
+        id: '1',
         ".0": 'hello',
         ".1": 'world',
       });
@@ -113,10 +113,10 @@ describe('Encoder', () => {
       array.push(array);
       expect(encoder.encode(array)).toEqual({
         type: 'array',
-        id: 1,
+        id: '1',
         '.0': 'hello',
         '.1': 'world',
-        '.2': { type: 'ref', id: 1 },
+        '.2': { type: 'ref', id: '1' },
       });
     });
 
@@ -125,7 +125,7 @@ describe('Encoder', () => {
       array[2] = 'b';
       expect(encoder.encode(array)).toEqual({
         type: 'array',
-        id: 1,
+        id: '1',
         '.0': 'a',
         '.2': 'b',
       });
@@ -137,7 +137,7 @@ describe('Encoder', () => {
       array[-4] = 'a';
       expect(encoder.encode(array)).toEqual({
         type: 'object',
-        id: 1,
+        id: '1',
         prototype: { type: 'builtin', name: 'Array.prototype' },
         '.length': {
           type: 'property',
@@ -155,7 +155,7 @@ describe('Encoder', () => {
       array[4] = 'b';
       expect(encoder.encode(array)).toEqual({
         type: 'array',
-        id: 1,
+        id: '1',
         '.4': 'b',
         '.-4': 'a',
       });
@@ -168,11 +168,11 @@ describe('Encoder', () => {
       array[sym] = 'hi';
       expect(encoder.encode(array)).toEqual({
         type: 'array',
-        id: 1,
+        id: '1',
         '.0': 'hello',
         '.1': 'world',
         '.foo': 'bar',
-        '<2>meep': 'hi',
+        '~2|meep': 'hi',
       });
     });
 
@@ -182,12 +182,12 @@ describe('Encoder', () => {
       array.constructor = weird;
       expect(encoder.encode(array)).toEqual({
         type: 'array',
-        id: 1,
+        id: '1',
         '.0': 'hello',
         '.1': 'world',
         '.constructor': {
           type: 'object',
-          id: 2,
+          id: '2',
           '.isThisNormal': 'no',
         },
       });
@@ -199,10 +199,10 @@ describe('Encoder', () => {
       Object.setPrototypeOf(array, weird);
       expect(encoder.encode(array)).toEqual({
         type: 'object',
-        id: 1,
+        id: '1',
         prototype: {
           type: 'object',
-          id: 2,
+          id: '2',
           '.isThisNormal': 'no',
         },
         '.0': 'hello',
@@ -227,7 +227,7 @@ describe('Encoder', () => {
       // in the console
       expect(encoder.encode(foo)).toEqual({
         type: 'function',
-        id: 1,
+        id: '1',
         source: 'function foo(a, b) {\n        return a + b;\n      }',
         '.length': {
           type: 'property',
@@ -243,10 +243,10 @@ describe('Encoder', () => {
           type: 'property',
           value: {
             type: 'object',
-            id: 2,
+            id: '2',
             '.constructor': {
               type: 'property',
-              value: { type: 'ref', id: 1 },
+              value: { type: 'ref', id: '1' },
               configurable: true,
               writable: true,
             },
@@ -263,7 +263,7 @@ describe('Encoder', () => {
       Object.setPrototypeOf(foo, Object);
       expect(encoder.encode(foo)).toEqual({
         type: 'function',
-        id: 1,
+        id: '1',
         source: 'function foo(a, b) {\n        return a + b;\n      }',
         prototype: { type: 'builtin', name: 'Object' },
         '.length': {
@@ -280,10 +280,10 @@ describe('Encoder', () => {
           type: 'property',
           value: {
             type: 'object',
-            id: 2,
+            id: '2',
             '.constructor': {
               type: 'property',
-              value: { type: 'ref', id: 1 },
+              value: { type: 'ref', id: '1' },
               configurable: true,
               writable: true,
             },
@@ -300,7 +300,7 @@ describe('Encoder', () => {
       foo.prototype = 'howdy';
       expect(encoder.encode(foo)).toEqual({
         type: 'function',
-        id: 1,
+        id: '1',
         source: 'function foo(a, b) {\n        return a + b;\n      }',
         '.length': {
           type: 'property',
@@ -334,10 +334,10 @@ describe('Encoder', () => {
       const encoded = encoder.encode(foo);
       expect(encoded.prototype).toEqual({
         type: 'object',
-        id: 2,
+        id: '2',
         '.toString': {
           type: 'function',
-          id: 3,
+          id: '3',
           source: 'function custom() {\n        called = true;\n        return \'boo\';\n      }',
           '.length': {
             type: 'property',
@@ -369,7 +369,7 @@ describe('Encoder', () => {
       foo[sym] = 'hi';
       expect(encoder.encode(foo)).toEqual({
         type: 'function',
-        id: 1,
+        id: '1',
         source: 'function foo(a, b) {\n        return a + b;\n      }',
         '.length': {
           type: 'property',
@@ -385,10 +385,10 @@ describe('Encoder', () => {
           type: 'property',
           value: {
             type: 'object',
-            id: 2,
+            id: '2',
             '.constructor': {
               type: 'property',
-              value: { type: 'ref', id: 1 },
+              value: { type: 'ref', id: '1' },
               configurable: true,
               writable: true,
             },
@@ -396,7 +396,7 @@ describe('Encoder', () => {
           writable: true,
         },
         '.bar': 'meh',
-        '<3>meep': 'hi',
+        '~3|meep': 'hi',
       });
     });
   });
@@ -406,7 +406,7 @@ describe('Encoder', () => {
       const obj = { foo: 'bar' };
       expect(encoder.encode(obj)).toEqual({
         type: 'object',
-        id: 1,
+        id: '1',
         '.foo': 'bar',
       });
     });
@@ -416,7 +416,7 @@ describe('Encoder', () => {
       Object.setPrototypeOf(obj, Function);
       expect(encoder.encode(obj)).toEqual({
         type: 'object',
-        id: 1,
+        id: '1',
         prototype: { type: 'builtin', name: 'Function' },
         '.foo': 'bar',
       });
@@ -440,25 +440,25 @@ describe('Encoder', () => {
       obj.c.obj = obj;
       expect(encoder.encode(obj)).toEqual({
         type: 'object',
-        id: 1,
+        id: '1',
         '.name': 'first',
         '.a': {
           type: 'object',
-          id: 2,
+          id: '2',
           '.name': 'second',
           '.b': {
             type: 'object',
-            id: 3,
+            id: '3',
             '.name': 'third',
-            '.a': { type: 'ref', id: 2 },
+            '.a': { type: 'ref', id: '2' },
           },
         },
-        '.b': { type: 'ref', id: 3 },
+        '.b': { type: 'ref', id: '3' },
         '.c': {
           type: 'object',
-          id: 4,
+          id: '4',
           '.name': 'fourth',
-          '.obj': { type: 'ref', id: 1 },
+          '.obj': { type: 'ref', id: '1' },
         },
       });
     });
@@ -474,13 +474,13 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
+          id: '1',
           '.foo': {
             type: 'property',
             value: {
               type: 'object',
-              id: 2,
-              '.parent': { type: 'ref', id: 1 },
+              id: '2',
+              '.parent': { type: 'ref', id: '1' },
             },
           },
         });
@@ -496,7 +496,7 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
+          id: '1',
           '.foo': {
             type: 'property',
             value: 'bar',
@@ -516,7 +516,7 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
+          id: '1',
           '.foo': {
             type: 'property',
             value: 'bar',
@@ -536,7 +536,7 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
+          id: '1',
           '.foo': {
             type: 'property',
             value: 'bar',
@@ -558,12 +558,12 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
+          id: '1',
           '.foo': {
             type: 'property',
             get: {
               type: 'function',
-              id: 2,
+              id: '2',
               source: getter.toString(),
               '.length': {
                 type: 'property',
@@ -579,10 +579,10 @@ describe('Encoder', () => {
                 type: 'property',
                 value: {
                   type: 'object',
-                  id: 3,
+                  id: '3',
                   '.constructor': {
                     type: 'property',
-                    value: { type: 'ref', id: 2 },
+                    value: { type: 'ref', id: '2' },
                     writable: true,
                     configurable: true,
                   },
@@ -608,12 +608,12 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
+          id: '1',
           '.foo': {
             type: 'property',
             set: {
               type: 'function',
-              id: 2,
+              id: '2',
               source: setter.toString(),
               '.length': {
                 type: 'property',
@@ -629,10 +629,10 @@ describe('Encoder', () => {
                 type: 'property',
                 value: {
                   type: 'object',
-                  id: 3,
+                  id: '3',
                   '.constructor': {
                     type: 'property',
-                    value: { type: 'ref', id: 2 },
+                    value: { type: 'ref', id: '2' },
                     writable: true,
                     configurable: true,
                   },
@@ -648,6 +648,20 @@ describe('Encoder', () => {
     });
 
     describe('symbol properties', () => {
+      test('no description and empty description are different', () => {
+        const obj = {};
+        const sym1 = Symbol();
+        const sym2 = Symbol('');
+        obj[sym1] = 'val1';
+        obj[sym2] = 'val2';
+        expect(encoder.encode(obj)).toEqual({
+          type: 'object',
+          id: '1',
+          '~2': 'val1',
+          '~3|': 'val2',
+        });
+      });
+
       test('property object values are encoded', () => {
         const obj = {};
         const sym = Symbol('foo');
@@ -659,11 +673,11 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
-          '<2>foo': {
+          id: '1',
+          '~2|foo': {
             type: 'object',
-            id: 3,
-            '.parent': { type: 'ref', id: 1 },
+            id: '3',
+            '.parent': { type: 'ref', id: '1' },
           },
         });
       });
@@ -673,7 +687,7 @@ describe('Encoder', () => {
         obj[Symbol.toStringTag] = 'foo';
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
+          id: '1',
           '@Symbol.toStringTag': 'foo',
         });
       });
@@ -689,8 +703,8 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
-          '<2>foo': {
+          id: '1',
+          '~2|foo': {
             type: 'property',
             value: 'bar',
             configurable: true,
@@ -710,8 +724,8 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
-          '<2>foo': {
+          id: '1',
+          '~2|foo': {
             type: 'property',
             value: 'bar',
             writable: true,
@@ -731,8 +745,8 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
-          '<2>foo': {
+          id: '1',
+          '~2|foo': {
             type: 'property',
             value: 'bar',
             writable: true,
@@ -754,12 +768,12 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
-          '<2>foo': {
+          id: '1',
+          '~2|foo': {
             type: 'property',
             get: {
               type: 'function',
-              id: 3,
+              id: '3',
               source: getter.toString(),
               '.length': {
                 type: 'property',
@@ -775,10 +789,10 @@ describe('Encoder', () => {
                 type: 'property',
                 value: {
                   type: 'object',
-                  id: 4,
+                  id: '4',
                   '.constructor': {
                     type: 'property',
-                    value: { type: 'ref', id: 3 },
+                    value: { type: 'ref', id: '3' },
                     writable: true,
                     configurable: true,
                   },
@@ -805,12 +819,12 @@ describe('Encoder', () => {
         });
         expect(encoder.encode(obj)).toEqual({
           type: 'object',
-          id: 1,
-          '<2>foo': {
+          id: '1',
+          '~2|foo': {
             type: 'property',
             set: {
               type: 'function',
-              id: 3,
+              id: '3',
               source: setter.toString(),
               '.length': {
                 type: 'property',
@@ -826,10 +840,10 @@ describe('Encoder', () => {
                 type: 'property',
                 value: {
                   type: 'object',
-                  id: 4,
+                  id: '4',
                   '.constructor': {
                     type: 'property',
-                    value: { type: 'ref', id: 3 },
+                    value: { type: 'ref', id: '3' },
                     writable: true,
                     configurable: true,
                   },

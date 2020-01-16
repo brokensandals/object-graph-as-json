@@ -169,19 +169,25 @@ export class Decoder {
         } else {
           targetKey = this.onKeyFailure(value, key, `key [${key}] does not refer to a symbol`);
         }
-      } else if (key.startsWith('<')) {
-        const idEnd = key.indexOf('>');
-        if (idEnd > 1) {
-          const id = key.slice(1, idEnd);
-          const description = key.slice(idEnd + 1);
-          const sym = this.decodeSymbol({ type: 'symbol', id, description }, context);
+      } else if (key.startsWith('~')) {
+        const idEnd = key.indexOf('|');
+        if (idEnd === 1) {
+          targetKey = this.onKeyFailure(value, key, `key [${key}] is missing id`);
+        }
+        else {
+          const fake = { type: 'symbol' };
+          if (idEnd > 1) {
+            fake.description = key.slice(idEnd + 1);
+            fake.id = key.slice(1, idEnd);
+          } else {
+            fake.id = key.slice(1);
+          }
+          const sym = this.decodeSymbol(fake, context);
           if (typeof sym === 'symbol') {
             targetKey = sym;
           } else {
             targetKey = this.onKeyFailure(value, key, `key [${key}] does not refer to a symbol`);
           }
-        } else {
-          targetKey = this.onKeyFailure(value, key, `key [${key}] does not follow format <id>description`);
         }
       }
 

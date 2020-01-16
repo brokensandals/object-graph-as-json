@@ -11,7 +11,7 @@ export class Encoder {
     let id = this.objectIds.get(value);
     
     if (!id) {
-      id = this.nextId++;
+      id = (this.nextId++).toString();
       this.objectIds.set(value, id);
     }
 
@@ -22,7 +22,7 @@ export class Encoder {
     let id = this.symbolIds.get(symbol);
 
     if (!id) {
-      id = this.nextId++;
+      id = (this.nextId++).toString();
       this.symbolIds.set(symbol, id);
     }
 
@@ -147,7 +147,11 @@ export class Encoder {
                 newName = `@${symBuiltinName}`;
               } else {
                 const symId = this.internSymbol(sym);
-                newName = `<${symId}>${sym.description}`;
+                if (sym.description === undefined) {
+                  newName = `~${symId}`;
+                } else {
+                  newName = `~${symId}|${sym.description}`;
+                }
               }
               const desc = Object.getOwnPropertyDescriptor(value, sym);
               result[newName] = encodeProp(desc);

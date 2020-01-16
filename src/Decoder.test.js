@@ -409,7 +409,93 @@ describe('Decoder', () => {
     });
 
     describe('other symbol properties', () => {
-      
+      test('without description', () => {
+        const original = { [Symbol()]: 'bar' };
+        const result = encdec(original);
+        const syms = Object.getOwnPropertySymbols(result);
+        expect(syms).toHaveLength(1);
+        expect(syms[0].description).toBeUndefined();
+        expect(result[syms[0]]).toEqual('bar');
+      });
+
+      test('with empty description', () => {
+        const original = { [Symbol('')]: 'bar' };
+        const result = encdec(original);
+        const syms = Object.getOwnPropertySymbols(result);
+        expect(syms).toHaveLength(1);
+        expect(syms[0].description).toEqual('');
+        expect(result[syms[0]]).toEqual('bar');
+      });
+
+      test('with description', () => {
+        const original = { [Symbol('meep')]: 'bar' };
+        const result = encdec(original);
+        const syms = Object.getOwnPropertySymbols(result);
+        expect(syms).toHaveLength(1);
+        expect(syms[0].description).toEqual('meep');
+        expect(result[syms[0]]).toEqual('bar');
+      });
+
+      test('with description that conflicts with previous occurrence', () => {
+        const original = { [Symbol('meep')]: 'bar' };
+        const encoded = encoder.encode(original);
+        const idMap = new Map([['2', Symbol('MEEP')]]);
+        let err;
+        decoder.onFailure = (value, message) => {
+          err = [value, message];
+          return Symbol.toStringTag;
+        };
+        const result = decoder.decode(encoded, { idMap });
+        expect(err).toEqual([{ type: 'symbol', id: '2', description: 'meep' }, 'symbol with id [2] has different description [meep] than existing symbol with that id [MEEP]']);
+        expect(result).toEqual({ [Symbol.toStringTag]: 'bar' });
+      });
+
+      test('when onFailure does not return a symbol', () => {
+        const original = { [Symbol('meep')]: 'bar' };
+        const encoded = encoder.encode(original);
+        const idMap = new Map([['2', Symbol('MEEP')]]);
+        let err;
+        decoder.onFailure = (value, message) => {
+          return 'nope';
+        };
+        decoder.onKeyFailure = (value, key, message) => {
+          err = [value, key, message];
+          return 'fine';
+        };
+        const result = decoder.decode(encoded, { idMap });
+        expect(err).toEqual([encoded, '~2|meep', 'key [~2|meep] does not refer to a symbol']);
+        expect(result).toEqual({ fine: 'bar' });
+      });
+
+      test('when onKeyFailure returns undefined', () => {
+        const original = { [Symbol('meep')]: 'bar' };
+        const encoded = encoder.encode(original);
+        const idMap = new Map([['2', Symbol('MEEP')]]);
+        let err;
+        decoder.onFailure = (value, message) => {
+          return 'nope';
+        };
+        decoder.onKeyFailure = (value, key, message) => {
+          err = [value, key, message];
+          return undefined;
+        };
+        const result = decoder.decode(encoded, { idMap });
+        expect(err).toEqual([encoded, '~2|meep', 'key [~2|meep] does not refer to a symbol']);
+        expect(result).toEqual({});
+      });
+
+      test('invalid return from onKeyFailure', () => {
+        const original = { [Symbol('meep')]: 'bar' };
+        const encoded = encoder.encode(original);
+        const idMap = new Map([['2', Symbol('MEEP')]]);
+        decoder.onFailure = (value, message) => {
+          return 'nope';
+        };
+        decoder.onKeyFailure = (value, key, message) => {
+          return {};
+        };
+        expect(() => decoder.decode(encoded, { idMap })).toThrow('onKeyFailure for key [~2|meep] did not return undefined, string, or symbol');
+      });
     });
   });
 
