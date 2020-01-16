@@ -49,4 +49,27 @@ describe('Decoder', () => {
       });
     });
   });
+
+  describe('bigints', () => {
+    test('successful', () => {
+      expect(encdec(BigInt('1234567890123456789012345678901234567890'))).toEqual(
+        BigInt('1234567890123456789012345678901234567890'));
+    });
+
+    test('no string', () => {
+      const input = { type: 'bigint' };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'bigint is missing string',
+      });
+    });
+
+    test('parse error', () => {
+      const input = { type: 'bigint', string: 'forty-two' };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'error parsing bigint [forty-two]: SyntaxError: Cannot convert forty-two to a BigInt',
+      });
+    });
+  });
 });

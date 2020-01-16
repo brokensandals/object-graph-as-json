@@ -46,4 +46,16 @@ export class Decoder {
 
     return builtin;
   }
+
+  decodeBigint(value, { idMap }) {
+    if (!value.string) {
+      return this.onFailure(value, 'bigint is missing string');
+    }
+
+    try {
+      return BigInt(value.string);
+    } catch (err) {
+      return this.onFailure(value, `error parsing bigint [${value.string}]: ${err}`);
+    }
+  }
 }
