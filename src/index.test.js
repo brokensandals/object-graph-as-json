@@ -1,4 +1,4 @@
-import { Encoder, Decoder } from './';
+import { Encoder, UnsafeDecoder } from './';
 
 test('sample usage', () => {
   // Sample object
@@ -22,7 +22,7 @@ test('sample usage', () => {
   const deserialized = JSON.parse(serialized);
 
   // Decoding
-  const decoder = new Decoder();
+  const decoder = new UnsafeDecoder();
   const decoded = decoder.decode(deserialized);
   expect(decoded.current).toEqual(2);
   decoded.increment();

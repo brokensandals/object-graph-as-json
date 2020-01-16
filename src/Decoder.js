@@ -1,6 +1,6 @@
 import { builtinsByName } from './builtins';
 
-export class Decoder {
+export class UnsafeDecoder {
   onFailure(value, message, context) {
     throw new Error(message);
   }

@@ -1,8 +1,8 @@
 import { builtins } from './builtins';
 import { Encoder } from './Encoder';
-import { Decoder } from './Decoder';
+import { UnsafeDecoder } from './Decoder';
 
-describe('Decoder', () => {
+describe('UnsafeDecoder', () => {
   let encoder;
   let decoder;
 
@@ -12,7 +12,7 @@ describe('Decoder', () => {
 
   beforeEach(() => {
     encoder = new Encoder();
-    decoder = new Decoder();
+    decoder = new UnsafeDecoder();
     decoder.onFailure = (value, message) => ({ value, failure: message });
     decoder.onKeyFailure = (value, key, message) => ({ value, key, keyFailure: message });
   });
