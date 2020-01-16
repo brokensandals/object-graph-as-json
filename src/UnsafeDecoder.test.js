@@ -1,6 +1,6 @@
 import { builtins } from './builtins';
 import { Encoder } from './Encoder';
-import { UnsafeDecoder } from './Decoder';
+import { UnsafeDecoder } from './UnsafeDecoder';
 
 describe('UnsafeDecoder', () => {
   let encoder;
