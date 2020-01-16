@@ -99,7 +99,7 @@ export class Decoder {
       return this.onFailure(value, `array with id [${value.id}] has .length property which should have been implied`);
     }
 
-    return decodeOntoObject(value, [], context);
+    return this.decodeOntoObject(value, [], context);
   }
 
   decodeFunction(value, context) {

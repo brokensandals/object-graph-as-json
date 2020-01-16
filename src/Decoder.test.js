@@ -102,7 +102,7 @@ describe('Decoder', () => {
       const seenIdSet = new Set();
       const actual = decoder.decode(encoded, { idMap, seenIdSet });
       expect(idMap.get(encoded.id)).toBe(actual);
-      expect(seenIdSet.has(encoded.id)).toBeTrue;
+      expect(seenIdSet.has(encoded.id)).toBeTruthy();
     });
 
     // TODO: test that symbols get reused when the same id appears multiple times in the input
@@ -124,6 +124,98 @@ describe('Decoder', () => {
         value: encoded,
         failure: `symbol with id [${encoded.id}] has different description [new] than existing symbol with that id [old]`,
       });
+    });
+  });
+
+  describe('arrays', () => {
+    test('simple', () => {
+      expect(encdec(['hello', 'world'])).toEqual(['hello', 'world']);
+    });
+
+    test('no id', () => {
+      const input = { type: 'array' };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'array is missing id',
+      });
+    });
+
+    test('with prototype', () => {
+      const input = { type: 'array', id: 1, prototype: { type: 'builtin', name: 'Object' } };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'array with id [1] has prototype property which should have been implied',
+      });
+    });
+
+    test('with length', () => {
+      const input = { type: 'array', id: 1, '.length': 4 };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'array with id [1] has .length property which should have been implied',
+      });
+    });
+
+    test('updates idMap and seenIdSet', () => {
+      const idMap = new Map();
+      const seenIdSet = new Set();
+      const encoded = encoder.encode(['hi']);
+      const result = decoder.decode(encoded, { idMap, seenIdSet });
+      expect(idMap.get(encoded.id)).toBe(result);
+      expect(seenIdSet.has(encoded.id)).toBeTruthy();
+    });
+
+    test('with circular references', () => {
+      const a = ['top'];
+      const b = ['middle', a];
+      a.push(b);
+      const c = ['bottom', a];
+      b.push(c);
+      a.push(c);
+      const result = encdec(a);
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual('top');
+      expect(result[1]).toHaveLength(3);
+      expect(result[1][0]).toEqual('middle');
+      expect(result[1][1]).toBe(result);
+      expect(result[1][2]).toHaveLength(2);
+      expect(result[1][2][0]).toEqual('bottom');
+      expect(result[1][2][1]).toBe(result);
+      expect(result[2]).toBe(result[1][2]);
+    });
+
+    test('with extra properties', () => {
+      const original = ['hi', 'there'];
+      original.extra = ['world'];
+      original[Symbol('meep')] = 'MEEP';
+      Object.defineProperty(original, 'justwritable', {
+        value: ['whatevs'],
+        writable: true,
+        configurable: false,
+        enumerable: false,
+      });
+      const result = encdec(original);
+      expect(result).toHaveLength(2);
+      expect(result.extra).toEqual(['world']);
+      const syms = Object.getOwnPropertySymbols(result);
+      expect(syms).toHaveLength(1);
+      expect(syms[0].description).toEqual('meep');
+      expect(result[syms[0]]).toEqual('MEEP');
+      expect(result.justwritable).toEqual(['whatevs']);
+      const desc = Object.getOwnPropertyDescriptor(result, 'justwritable');
+      expect(desc.writable).toBeTruthy();
+      expect(desc.configurable).toBeFalsy();
+      expect(desc.enumerable).toBeFalsy();
+    });
+
+    test('with gaps in indices', () => {
+      const original = ['hello'];
+      original[3] = 'world';
+      const result = encdec(original);
+      expect(result.constructor).toBe(Array);
+      expect(Object.getPrototypeOf(result)).toBe(Array.prototype);
+      expect(result).toHaveLength(4);
+      expect(result).toEqual(['hello', undefined, undefined, 'world']);
     });
   });
 });
