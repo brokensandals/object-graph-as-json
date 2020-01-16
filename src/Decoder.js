@@ -167,7 +167,7 @@ export class Decoder {
         if (typeof builtin === 'symbol') {
           targetKey = builtin;
         } else {
-          targetKey = onKeyFailure(value, key, `key [${key}] does not refer to a symbol`);
+          targetKey = this.onKeyFailure(value, key, `key [${key}] does not refer to a symbol`);
         }
       } else if (key.startsWith('<')) {
         const idEnd = key.indexOf('>');
@@ -178,10 +178,10 @@ export class Decoder {
           if (typeof sym === 'symbol') {
             targetKey = sym;
           } else {
-            targetKey = onKeyFailure(value, key, `key [${key}] does not refer to a symbol`);
+            targetKey = this.onKeyFailure(value, key, `key [${key}] does not refer to a symbol`);
           }
         } else {
-          targetKey = onKeyFailure(value, key, `key [${key}] does not follow format <id>description`);
+          targetKey = this.onKeyFailure(value, key, `key [${key}] does not follow format <id>description`);
         }
       }
 

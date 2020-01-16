@@ -14,6 +14,7 @@ describe('Decoder', () => {
     encoder = new Encoder();
     decoder = new Decoder();
     decoder.onFailure = (value, message) => ({ value, failure: message });
+    decoder.onKeyFailure = (value, key, message) => ({ value, key, keyFailure: message });
   });
 
   describe('values that encode to themselves', () => {
@@ -308,6 +309,107 @@ describe('Decoder', () => {
       expect(desc.writable).toBeTruthy();
       expect(desc.configurable).toBeFalsy();
       expect(desc.enumerable).toBeFalsy();
+    });
+  });
+
+  describe('objects', () => {
+    test('simple', () => {
+      const original = { foo: 'bar' };
+      const odesc = Object.getOwnPropertyDescriptor(original, 'foo');
+      const result = encdec(original);
+      expect(typeof result).toEqual('object');
+      expect(result).toEqual({ foo: 'bar' });
+      expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+      const rdesc = Object.getOwnPropertyDescriptor(result, 'foo');
+      expect(rdesc).toEqual(odesc);
+    });
+
+    test('no id', () => {
+      const input = { type: 'object' };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'object is missing id',
+      });
+    });
+
+    test('with circular references', () => {
+      const a = { name: 'a' };
+      a.b = { name: 'b' , a };
+      a.b.c = { name: 'c', a, b: a.b };
+      a.a = a;
+      const result = encdec(a);
+      expect(result.name).toEqual('a');
+      expect(result.b.name).toEqual('b');
+      expect(result.b.c.name).toEqual('c');
+      expect(result.a).toBe(result);
+      expect(result.b.a).toBe(result);
+      expect(result.b.c.a).toBe(result);
+      expect(result.b.c.b).toBe(result.b);
+    });
+
+    test('with different prototype', () => {
+      const original = { foo: 'bar' };
+      const originalProto = { useful: false };
+      Object.setPrototypeOf(original, originalProto);
+      const result = encdec(original);
+      expect(result.foo).toEqual('bar');
+      expect(Object.getPrototypeOf(result)).toEqual({ useful: false });
+    });
+
+    describe('builtin symbol properties', () => {
+      test('success', () => {
+        const original = { foo: 'bar', [Symbol.toStringTag]: 'whatevs' };
+        const result = encdec(original);
+        expect(result).toEqual({
+          foo: 'bar',
+          [Symbol.toStringTag]: 'whatevs',
+        });
+      });
+
+      test('unknown name', () => {
+        const input = { type: 'object', id: 1, '@garbage': 'foo' };
+        let err;
+        decoder.onFailure = (value, message) => {
+          err = [value, message];
+          return Symbol.toStringTag;
+        };
+        expect(decoder.decode(input)).toEqual({ [Symbol.toStringTag]: 'foo' });
+        expect(err).toEqual([{ type: 'builtin', name: 'garbage' }, 'unrecognized builtin name [garbage]']);
+      });
+
+      test('non-symbol builtin', () => {
+        const input = { type: 'object', id: 1, '@Array': 'foo' };
+        let err;
+        decoder.onKeyFailure = (value, key, message) => {
+          err = [value, key, message];
+          return Symbol.toStringTag;
+        };
+        expect(decoder.decode(input)).toEqual({ [Symbol.toStringTag]: 'foo' });
+        expect(err).toEqual([input, '@Array', 'key [@Array] does not refer to a symbol']);
+      });
+
+      test('undefined returned from onKeyFailure', () => {
+        const input = { type: 'object', id: 1, '@Array': 'foo' };
+        let err;
+        decoder.onKeyFailure = (value, key, message) => {
+          err = [value, key, message];
+          return undefined;
+        };
+        expect(decoder.decode(input)).toEqual({});
+        expect(err).toEqual([input, '@Array', 'key [@Array] does not refer to a symbol']);
+      });
+
+      test('invalid return from onKeyFailure', () => {
+        const input = { type: 'object', id: 1, '@Array': 'foo' };
+        decoder.onKeyFailure = (value, key, message) => {
+          return {};
+        };
+        expect(() => decoder.decode(input)).toThrow('onKeyFailure for key [@Array] did not return undefined, string, or symbol');
+      });
+    });
+
+    describe('other symbol properties', () => {
+      
     });
   });
 
