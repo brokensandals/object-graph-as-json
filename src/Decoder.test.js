@@ -310,4 +310,43 @@ describe('Decoder', () => {
       expect(desc.enumerable).toBeFalsy();
     });
   });
+
+  describe('refs', () => {
+    // the "happy paths" are tested by the circular reference tests above
+
+    test('no id', () => {
+      const input = { type: 'ref' };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'ref is missing id',
+      });
+    });
+
+    test('id in idMap but not in seenIdSet', () => {
+      // idMap may contain ids that were decoded from a previous message
+      // in a sequence of messages. We want to make sure that the object we
+      // return is up-to-date for this message. seenIdSet is what tells us
+      // whether we've seenm the id in _this_ message, and thus can assume
+      // that the entry in idMap is accurate.
+      const input = { type: 'ref', id: 1 };
+      const foo = {};
+      const idMap = new Map([[1, foo]]);
+      const seenIdSet = new Set();
+      expect(decoder.decode(input, { idMap, seenIdSet })).toEqual({
+        value: input,
+        failure: 'id [1] was first encountered on a ref',
+      });
+    });
+
+    test('id in seenIdSet but not in idMap', () => {
+      // this just indicates an internal error or bad params passed to decode()
+      const input = { type: 'ref', id: 1 };
+      const idMap = new Map();
+      const seenIdSet = new Set([1]);
+      expect(decoder.decode(input, { idMap, seenIdSet })).toEqual({
+        value: input,
+        failure: 'ref id [1] not found in idMap',
+      });
+    });
+  });
 });
