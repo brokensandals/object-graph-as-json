@@ -72,4 +72,56 @@ describe('Decoder', () => {
       });
     });
   });
+
+  describe('symbols', () => {
+    test('successful', () => {
+      const original = Symbol();
+      const actual = encdec(original);
+      expect(actual).not.toBe(original);
+      expect(typeof actual).toEqual('symbol');
+    });
+
+    test('with description', () => {
+      const original = Symbol('meep');
+      const actual = encdec(original);
+      expect(actual).not.toBe(original);
+      expect(actual.description).toEqual('meep');
+    });
+
+    test('reuses symbols in idMap', () => {
+      const original = Symbol();
+      const encoded = encoder.encode(original);
+      const idMap = new Map([[encoded.id, original]]);
+      expect(decoder.decode(encoded, { idMap })).toBe(original);
+    });
+
+    test('updates idMap', () => {
+      const original = Symbol();
+      const encoded = encoder.encode(original);
+      const idMap = new Map();
+      const actual = decoder.decode(encoded, { idMap });
+      expect(idMap.get(encoded.id)).toBe(actual);
+    });
+
+    // TODO: test that symbols get reused when the same id appears multiple times in the input
+
+    test('no id', () => {
+      const input = { type: 'symbol', description: 'foo'};
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'symbol is missing id',
+      });
+    });
+
+    test('description conflict', () => {
+      const original = Symbol('old');
+      const encoded = encoder.encode(original);
+      const idMap = new Map([[encoded.id, original]]);
+      encoded.description = 'new';
+      expect(decoder.decode(encoded, { idMap })).toEqual({
+        value: encoded,
+        failure: `symbol with id [${encoded.id}] has different description [new] than existing symbol with that id [old]`,
+      });
+    });
+  });
 });

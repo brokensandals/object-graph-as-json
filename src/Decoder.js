@@ -58,4 +58,23 @@ export class Decoder {
       return this.onFailure(value, `error parsing bigint [${value.string}]: ${err}`);
     }
   }
+
+  decodeSymbol(value, { idMap }) {
+    if (!value.id) {
+      return this.onFailure(value, 'symbol is missing id');
+    }
+
+    const existing = idMap.get(value.id);
+    if (existing) {
+      if (existing.description !== value.description) {
+        return this.onFailure(value,
+          `symbol with id [${value.id}] has different description [${value.description}] than existing symbol with that id [${existing.description}]`);
+      }
+      return existing;
+    }
+
+    const sym = Symbol(value.description);
+    idMap.set(value.id, sym);
+    return sym;
+  }
 }
