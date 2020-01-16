@@ -497,6 +497,195 @@ describe('Decoder', () => {
         expect(() => decoder.decode(encoded, { idMap })).toThrow('onKeyFailure for key [~2|meep] did not return undefined, string, or symbol');
       });
     });
+
+    describe('property descriptors', () => {
+      test('configurable only', () => {
+        const original = {};
+        Object.defineProperty(original, 'foo', {
+          configurable: true,
+          enumerable: false,
+          writable: false,
+          value: { nested: 'bar' },
+        });
+        const result = encdec(original);
+        expect(Object.getOwnPropertyDescriptor(result, 'foo')).toEqual({
+          configurable: true,
+          enumerable: false,
+          writable: false,
+          value: { nested: 'bar' },
+        });
+      });
+
+      test('enumerable only', () => {
+        const original = {};
+        Object.defineProperty(original, 'foo', {
+          configurable: false,
+          enumerable: true,
+          writable: false,
+          value: { nested: 'bar' },
+        });
+        const result = encdec(original);
+        expect(Object.getOwnPropertyDescriptor(result, 'foo')).toEqual({
+          configurable: false,
+          enumerable: true,
+          writable: false,
+          value: { nested: 'bar' },
+        });
+      });
+      
+      test('writable only', () => {
+        const original = {};
+        Object.defineProperty(original, 'foo', {
+          configurable: false,
+          enumerable: false,
+          writable: true,
+          value: { nested: 'bar' },
+        });
+        const result = encdec(original);
+        expect(Object.getOwnPropertyDescriptor(result, 'foo')).toEqual({
+          configurable: false,
+          enumerable: false,
+          writable: true,
+          value: { nested: 'bar' },
+        });
+      });
+
+      test('without data or accessor', () => {
+        const input = {
+          type: 'object',
+          id: '1',
+          '.foo': {
+            type: 'property',
+            writable: true,
+          }
+        };
+        let err;
+        decoder.onFailure = (value, message) => {
+          err = [value, message];
+          return {
+            configurable: true,
+            enumerable: false,
+            writable: false,
+            value: 'adjusted',
+          };
+        };
+        const result = decoder.decode(input);
+        expect(Object.getOwnPropertyDescriptor(result, 'foo')).toEqual({
+          configurable: true,
+          enumerable: false,
+          writable: false,
+          value: 'adjusted',
+        });
+        expect(err).toEqual([input['.foo'], 'property does not have get, set, or value']);
+      });
+
+      test('without data or accessor, and onFailure returns undefined', () => {
+        const input = {
+          type: 'object',
+          id: '1',
+          '.foo': {
+            type: 'property',
+            writable: true,
+          }
+        };
+        let err;
+        decoder.onFailure = (value, message) => {
+          err = [value, message];
+          return undefined;
+        };
+        expect(decoder.decode(input)).toEqual({});
+        expect(err).toEqual([input['.foo'], 'property does not have get, set, or value']);
+      });
+
+      test('without data or accessor, and onFailure returns invalid', () => {
+        const input = {
+          type: 'object',
+          id: '1',
+          '.foo': {
+            type: 'property',
+            writable: true,
+          }
+        };
+        let err;
+        decoder.onFailure = (value, message) => {
+          err = [value, message];
+          return 'garbage';
+        };
+        expect(() => decoder.decode(input)).toThrow('Property description must be an object');
+        expect(err).toEqual([input['.foo'], 'property does not have get, set, or value']);
+      });
+
+      test('with both data and accessor', () => {
+        const input = {
+          type: 'object',
+          id: '1',
+          '.foo': {
+            type: 'property',
+            value: 'bar',
+            get: 'meh',
+          },
+        };
+        let err;
+        decoder.onFailure = (value, message) => {
+          err = [value, message];
+          return {
+            configurable: true,
+            enumerable: false,
+            writable: false,
+            value: 'adjusted',
+          };
+        };
+        const result = decoder.decode(input);
+        expect(Object.getOwnPropertyDescriptor(result, 'foo')).toEqual({
+          configurable: true,
+          enumerable: false,
+          writable: false,
+          value: 'adjusted',
+        });
+        expect(err).toEqual([input['.foo'], 'property has both accessor and value']);
+      });
+
+      test('with getter', () => {
+        function getter() {
+          return 'hi';
+        }
+        const original = {};
+        Object.defineProperty(original, 'foo', {
+          get: getter,
+          enumerable: true,
+          configurable: false,
+        });
+        const result = encdec(original);
+        const desc = Object.getOwnPropertyDescriptor(result, 'foo');
+        expect(desc).not.toBeNull();
+        expect(desc.enumerable).toBeTruthy();
+        expect(desc.configurable).toBeFalsy();
+        expect(typeof desc.get).toEqual('function');
+        expect(desc.set).toBeUndefined();
+        expect(result.foo).toEqual('hi');
+      });
+
+      test('with setter', () => {
+        function setter(arg) {
+          this.received = arg;
+        }
+        const original = {};
+        Object.defineProperty(original, 'foo', {
+          set: setter,
+          enumerable: true,
+          configurable: false,
+        });
+        const result = encdec(original);
+        const desc = Object.getOwnPropertyDescriptor(result, 'foo');
+        expect(desc).not.toBeNull();
+        expect(desc.enumerable).toBeTruthy();
+        expect(desc.configurable).toBeFalsy();
+        expect(typeof desc.set).toEqual('function');
+        expect(desc.get).toBeUndefined();
+        result.foo = 'woot';
+        expect(result.received).toEqual('woot');
+      });
+    });
   });
 
   describe('refs', () => {

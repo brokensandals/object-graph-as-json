@@ -201,7 +201,9 @@ export class Decoder {
       }
 
       const descriptor = this.decodePropertyValue(value[key], context);
-      Object.defineProperty(target, targetKey, descriptor);
+      if (descriptor !== undefined) {
+        Object.defineProperty(target, targetKey, descriptor);
+      }
     }
 
     return target;
@@ -212,7 +214,7 @@ export class Decoder {
     if (typeof value === 'object' && value.type === 'property') {
       if (value.get === undefined && value.set === undefined) {
         if (value.value === undefined) {
-          return onFailure(value, 'property does not have get, set, or value');
+          return this.onFailure(value, 'property does not have get, set, or value');
         }
         descriptor.value = this.decode(value.value, context);
       } else {
