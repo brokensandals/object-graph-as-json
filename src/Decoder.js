@@ -5,32 +5,32 @@ export class Decoder {
     throw new Error(message);
   }
 
-  decode(value, options = {}) {
+  decode(value, context = {}) {
     if (typeof value !== 'object' || value === null) {
       return value;
     }
 
-    if (!options.idMap) {
-      options.idMap = new Map();
+    if (!context.idMap) {
+      context.idMap = new Map();
     }
 
     switch (value.type) {
       case 'builtin':
-        return this.decodeBuiltin(value, options);
+        return this.decodeBuiltin(value, context);
       case 'bigint':
-        return this.decodeBigint(value, options);
+        return this.decodeBigint(value, context);
       case 'symbol':
-        return this.decodeSymbol(value, options);
+        return this.decodeSymbol(value, context);
       case 'array':
-        return this.decodeArray(value, options);
+        return this.decodeArray(value, context);
       case 'function':
-        return this.decodeFunction(value, options);
+        return this.decodeFunction(value, context);
       case 'object':
-        return this.decodeObject(value, options);
+        return this.decodeObject(value, context);
       case 'ref':
-        return this.decodeRef(value, options);
+        return this.decodeRef(value, context);
       default:
-        return this.decodeOther(value, options);
+        return this.decodeOther(value, context);
     }
   }
 
