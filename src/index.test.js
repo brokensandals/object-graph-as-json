@@ -28,3 +28,21 @@ test('sample usage', () => {
   decoded.increment();
   expect(decoded.current).toEqual(3);
 });
+
+test('one of the reasons UnsafeDecoder is unsafe', () => {
+  expect(Object.EVIL_THING_HAPPENED).toBeUndefined();
+
+  const maliciousInput = {
+    type: 'function',
+    id: '1',
+    // Normally, a function's source would start with something like
+    // function(). Because this doesn't, the malicious code gets execute
+    // as soon as we try to decode the input, even if we never try
+    // to call the decoded function.
+    source: 'Object.EVIL_THING_HAPPENED = true'
+  };
+
+  new UnsafeDecoder().decode(maliciousInput);
+
+  expect(Object.EVIL_THING_HAPPENED).toBeTruthy();
+});
