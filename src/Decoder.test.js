@@ -218,4 +218,96 @@ describe('Decoder', () => {
       expect(result).toEqual(['hello', undefined, undefined, 'world']);
     });
   });
+
+  describe('functions', () => {
+    test('simple', () => {
+      function addNums(a, b) {
+        return a + b;
+      }
+      const result = encdec(addNums);
+      expect(typeof result).toEqual('function');
+      expect(Object.getPrototypeOf(result)).toBe(Function.prototype);
+      expect(result.length).toEqual(2);
+      expect(result.name).toEqual('addNums');
+      expect(result.toString()).toEqual(addNums.toString());
+      expect(result(5, 10)).toEqual(15);
+      expect(result.prototype.constructor).toBe(result);
+    });
+
+    test('bound functions do not work', () => {
+      function parrot() {
+        return this;
+      }
+      const original = parrot.bind('hello');
+      const encoded = encoder.encode(original);
+      // It's an "Unexpected identifier" because, at least in Node, the source
+      // code of bound functions includes `[native code]`.
+      expect(decoder.decode(encoded)).toEqual({
+        value: encoded,
+        failure: 'function with id [1] could not be constructed: SyntaxError: Unexpected identifier',
+      });
+    });
+
+    test('no id', () => {
+      const input = { type: 'function', source: 'function foo() {}' };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'function is missing id',
+      });
+    });
+
+    test('no source', () => {
+      const input = { type: 'function', id: 1 };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'function with id [1] is missing source',
+      });
+    });
+
+    test('invalid source', () => {
+      const input = { type: 'function', id: 1, source: '\\' };
+      expect(decoder.decode(input)).toEqual({
+        value: input,
+        failure: 'function with id [1] could not be constructed: SyntaxError: Invalid or unexpected token',
+      });
+    });
+
+    test('with different prototype', () => {
+      function foo() {
+        return 'hi';
+      }
+      Object.setPrototypeOf(foo, Array.prototype);
+      const result = encdec(foo);
+      expect(typeof result).toEqual('function');
+      expect(result.toString()).toEqual(foo.toString());
+      expect(Object.getPrototypeOf(result)).toBe(Array.prototype);
+    });
+
+    test('with extra properties', () => {
+      function original() {
+        return 'hi';
+      }
+      original.extra = ['world'];
+      original[Symbol('meep')] = 'MEEP';
+      Object.defineProperty(original, 'justwritable', {
+        value: ['whatevs'],
+        writable: true,
+        configurable: false,
+        enumerable: false,
+      });
+      const result = encdec(original);
+      expect(typeof result).toEqual('function');
+      expect(result()).toEqual('hi');
+      expect(result.extra).toEqual(['world']);
+      const syms = Object.getOwnPropertySymbols(result);
+      expect(syms).toHaveLength(1);
+      expect(syms[0].description).toEqual('meep');
+      expect(result[syms[0]]).toEqual('MEEP');
+      expect(result.justwritable).toEqual(['whatevs']);
+      const desc = Object.getOwnPropertyDescriptor(result, 'justwritable');
+      expect(desc.writable).toBeTruthy();
+      expect(desc.configurable).toBeFalsy();
+      expect(desc.enumerable).toBeFalsy();
+    });
+  });
 });
