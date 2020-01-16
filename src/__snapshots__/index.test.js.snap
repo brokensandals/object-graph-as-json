@@ -1,0 +1,43 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`sample usage 1`] = `
+Object {
+  ".current": 2,
+  ".increment": Object {
+    ".length": Object {
+      "configurable": true,
+      "type": "property",
+      "value": 0,
+    },
+    ".name": Object {
+      "configurable": true,
+      "type": "property",
+      "value": "increment",
+    },
+    ".prototype": Object {
+      "type": "property",
+      "value": Object {
+        ".constructor": Object {
+          "configurable": true,
+          "type": "property",
+          "value": Object {
+            "id": "2",
+            "type": "ref",
+          },
+          "writable": true,
+        },
+        "id": "3",
+        "type": "object",
+      },
+      "writable": true,
+    },
+    "id": "2",
+    "source": "function increment() {
+      this.current++;
+    }",
+    "type": "function",
+  },
+  "id": "1",
+  "type": "object",
+}
+`;
