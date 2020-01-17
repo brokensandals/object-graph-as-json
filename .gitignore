@@ -1,5 +1,6 @@
 dist/
 esm/
+gen-src/
 lib/
 
 # Logs

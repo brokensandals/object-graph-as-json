@@ -5,11 +5,12 @@
   "main": "lib/index.js",
   "module": "esm/index.js",
   "scripts": {
-    "build": "npm run clean && npm run build:commonjs && npm run build:embeddable && npm run build:esm",
-    "build:commonjs": "BABEL_MODULES=commonjs babel src/ --out-dir lib/ --ignore src/**/*.test.js",
+    "build": "npm run clean && npm run build:embeddable && npm run build:gen:embed && npm run build:cjs && npm run build:esm",
+    "build:cjs": "BABEL_MODULES=cjs babel src/ gen-src/ --out-dir lib/ --ignore src/**/*.test.js",
     "build:embeddable": "webpack --mode=production",
-    "build:esm": "BABEL_MODULES=false babel src/ --out-dir esm/ --ignore src/**/*.test.js",
-    "clean": "rimraf esm dist lib",
+    "build:gen:embed": "node scripts/build-embed-json.js",
+    "build:esm": "BABEL_MODULES=false babel src/ gen-src/ --out-dir esm/ --ignore src/**/*.test.js",
+    "clean": "rimraf esm dist gen-src lib",
     "test": "jest",
     "test:watch": "jest --watch"
   },
