@@ -1,5 +1,21 @@
 import { builtinsByValue } from './builtins';
 
+/**
+ * Takes arbitrary javascript objects and encodes them using only JSON-safe objects.
+ * 
+ * Usage:
+ *   const encoder = new Encoder();
+ *   const result = encoder.encode(myObject);
+ * 
+ * The instance of Encoder remembers objects and symbols that it has seen before, and
+ * will encode them with the same ID on subsequent calls to .encode(). By default,
+ * IDs are sequentially generated, and if you create a new Encoder instance the IDs
+ * will start over at '1' again.
+ * 
+ * You can override the generateId() method to change how IDs are generated, or
+ * override internObject() and internValue() to manage the lookup of existing objects
+ * yourself.
+ */
 export default class Encoder {
   constructor() {
     this.objectIds = new WeakMap();
@@ -7,28 +23,57 @@ export default class Encoder {
     this.nextId = 1;
   }
 
+  /**
+   * @returns {string} a new id that is unique at least within the
+   *   context of this Encoder instance
+   */
+  generateId() {
+    return (this.nextId++).toString();
+  }
+
+  /**
+   * Retrieves or creates an id for an object, array, or function.
+   * At least within the context of this instance of the Encoder, this
+   * should return the same value every time it is called for the same in-memory
+   * object, and different values when called for different in-memory objects.
+   * @param {*} value an object, array, or function
+   * @returns {string} the id
+   */
   internObject(value) {
     let id = this.objectIds.get(value);
     
     if (!id) {
-      id = (this.nextId++).toString();
+      id = this.generateId();
       this.objectIds.set(value, id);
     }
 
     return id;
   }
 
+  /**
+   * Retrieves or creates an id for a symbol.
+   * At least within the context of this instance of the Encoder, this should
+   * return the same value every time it is called for the same symbol, and different values
+   * when called for different symbols.
+   * @param {*} symbol
+   * @returns {string} the id
+   */
   internSymbol(symbol) {
     let id = this.symbolIds.get(symbol);
 
     if (!id) {
-      id = (this.nextId++).toString();
+      id = this.generateId();
       this.symbolIds.set(symbol, id);
     }
 
     return id;
   }
 
+  /**
+   * Encodes the given value.
+   * @param {*} value 
+   * @returns {*} the value encoded according to the spec in the README
+   */
   encode(value) {
     let refIds = null;
 
