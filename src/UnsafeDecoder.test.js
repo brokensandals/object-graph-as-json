@@ -89,24 +89,20 @@ describe('UnsafeDecoder', () => {
       expect(actual.description).toEqual('meep');
     });
 
-    test('reuses symbols in idMap', () => {
+    test('reuses symbols across decodings', () => {
       const original = Symbol();
-      const encoded = encoder.encode(original);
-      const idMap = new Map([[encoded.id, original]]);
-      expect(decoder.decode(encoded, { idMap })).toBe(original);
+      expect(encdec(original)).toBe(encdec(original));
     });
 
-    test('updates idMap and seenIdSet', () => {
-      const original = Symbol();
-      const encoded = encoder.encode(original);
-      const idMap = new Map();
-      const seenIdSet = new Set();
-      const actual = decoder.decode(encoded, { idMap, seenIdSet });
-      expect(idMap.get(encoded.id)).toBe(actual);
-      expect(seenIdSet.has(encoded.id)).toBeTruthy();
+    test('reuses symbols within a decoding', () => {
+      const sym1 = Symbol();
+      const sym2 = Symbol();
+      const original = [sym1, sym2, sym1];
+      const result = encdec(original);
+      expect(result).toHaveLength(3);
+      expect(result[0]).toBe(result[2]);
+      expect(result[0]).not.toBe(result[1]);
     });
-
-    // TODO: test that symbols get reused when the same id appears multiple times in the input
 
     test('no id', () => {
       const input = { type: 'symbol', description: 'foo'};
@@ -119,9 +115,9 @@ describe('UnsafeDecoder', () => {
     test('description conflict', () => {
       const original = Symbol('old');
       const encoded = encoder.encode(original);
-      const idMap = new Map([[encoded.id, original]]);
+      decoder.decode(encoded);
       encoded.description = 'new';
-      expect(decoder.decode(encoded, { idMap })).toEqual({
+      expect(decoder.decode(encoded)).toEqual({
         value: encoded,
         failure: `symbol with id [${encoded.id}] has different description [new] than existing symbol with that id [old]`,
       });
@@ -155,15 +151,6 @@ describe('UnsafeDecoder', () => {
         value: input,
         failure: 'array with id [1] has .length property which should have been implied',
       });
-    });
-
-    test('updates idMap and seenIdSet', () => {
-      const idMap = new Map();
-      const seenIdSet = new Set();
-      const encoded = encoder.encode(['hi']);
-      const result = decoder.decode(encoded, { idMap, seenIdSet });
-      expect(idMap.get(encoded.id)).toBe(result);
-      expect(seenIdSet.has(encoded.id)).toBeTruthy();
     });
 
     test('with circular references', () => {
@@ -437,23 +424,27 @@ describe('UnsafeDecoder', () => {
       });
 
       test('with description that conflicts with previous occurrence', () => {
-        const original = { [Symbol('meep')]: 'bar' };
+        const original = { [Symbol('MEEP')]: 'bar' };
         const encoded = encoder.encode(original);
-        const idMap = new Map([['2', Symbol('MEEP')]]);
+        decoder.decode(encoded);
+        delete encoded['~2|MEEP'];
+        encoded['~2|meep'] = 'bar';
         let err;
         decoder.onFailure = (value, message) => {
           err = [value, message];
           return Symbol.toStringTag;
         };
-        const result = decoder.decode(encoded, { idMap });
+        const result = decoder.decode(encoded);
         expect(err).toEqual([{ type: 'symbol', id: '2', description: 'meep' }, 'symbol with id [2] has different description [meep] than existing symbol with that id [MEEP]']);
         expect(result).toEqual({ [Symbol.toStringTag]: 'bar' });
       });
 
       test('when onFailure does not return a symbol', () => {
-        const original = { [Symbol('meep')]: 'bar' };
+        const original = { [Symbol('MEEP')]: 'bar' };
         const encoded = encoder.encode(original);
-        const idMap = new Map([['2', Symbol('MEEP')]]);
+        decoder.decode(encoded);
+        delete encoded['~2|MEEP'];
+        encoded['~2|meep'] = 'bar';
         let err;
         decoder.onFailure = (value, message) => {
           return 'nope';
@@ -462,15 +453,17 @@ describe('UnsafeDecoder', () => {
           err = [value, key, message];
           return 'fine';
         };
-        const result = decoder.decode(encoded, { idMap });
+        const result = decoder.decode(encoded);
         expect(err).toEqual([encoded, '~2|meep', 'key [~2|meep] does not refer to a symbol']);
         expect(result).toEqual({ fine: 'bar' });
       });
 
       test('when onKeyFailure returns undefined', () => {
-        const original = { [Symbol('meep')]: 'bar' };
+        const original = { [Symbol('MEEP')]: 'bar' };
         const encoded = encoder.encode(original);
-        const idMap = new Map([['2', Symbol('MEEP')]]);
+        decoder.decode(encoded);
+        delete encoded['~2|MEEP'];
+        encoded['~2|meep'] = 'bar';
         let err;
         decoder.onFailure = (value, message) => {
           return 'nope';
@@ -479,22 +472,24 @@ describe('UnsafeDecoder', () => {
           err = [value, key, message];
           return undefined;
         };
-        const result = decoder.decode(encoded, { idMap });
+        const result = decoder.decode(encoded);
         expect(err).toEqual([encoded, '~2|meep', 'key [~2|meep] does not refer to a symbol']);
         expect(result).toEqual({});
       });
 
       test('invalid return from onKeyFailure', () => {
-        const original = { [Symbol('meep')]: 'bar' };
+        const original = { [Symbol('MEEP')]: 'bar' };
         const encoded = encoder.encode(original);
-        const idMap = new Map([['2', Symbol('MEEP')]]);
+        decoder.decode(encoded);
+        delete encoded['~2|MEEP'];
+        encoded['~2|meep'] = 'bar';
         decoder.onFailure = (value, message) => {
           return 'nope';
         };
         decoder.onKeyFailure = (value, key, message) => {
           return {};
         };
-        expect(() => decoder.decode(encoded, { idMap })).toThrow('onKeyFailure for key [~2|meep] did not return undefined, string, or symbol');
+        expect(() => decoder.decode(encoded)).toThrow('onKeyFailure for key [~2|meep] did not return undefined, string, or symbol');
       });
     });
 
@@ -699,30 +694,11 @@ describe('UnsafeDecoder', () => {
       });
     });
 
-    test('id in idMap but not in seenIdSet', () => {
-      // idMap may contain ids that were decoded from a previous message
-      // in a sequence of messages. We want to make sure that the object we
-      // return is up-to-date for this message. seenIdSet is what tells us
-      // whether we've seenm the id in _this_ message, and thus can assume
-      // that the entry in idMap is accurate.
+    test('id unrecognized', () => {
       const input = { type: 'ref', id: 1 };
-      const foo = {};
-      const idMap = new Map([[1, foo]]);
-      const seenIdSet = new Set();
-      expect(decoder.decode(input, { idMap, seenIdSet })).toEqual({
+      expect(decoder.decode(input)).toEqual({
         value: input,
         failure: 'id [1] was first encountered on a ref',
-      });
-    });
-
-    test('id in seenIdSet but not in idMap', () => {
-      // this just indicates an internal error or bad params passed to decode()
-      const input = { type: 'ref', id: 1 };
-      const idMap = new Map();
-      const seenIdSet = new Set([1]);
-      expect(decoder.decode(input, { idMap, seenIdSet })).toEqual({
-        value: input,
-        failure: 'ref id [1] not found in idMap',
       });
     });
   });

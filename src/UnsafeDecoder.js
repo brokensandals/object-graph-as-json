@@ -1,6 +1,10 @@
 import { builtinsByName } from './builtins';
 
 export default class UnsafeDecoder {
+  constructor() {
+    this.symbolsById = new Map();
+  }
+
   onFailure(value, message, context) {
     throw new Error(message);
   }
@@ -14,11 +18,8 @@ export default class UnsafeDecoder {
       return value;
     }
 
-    if (!context.idMap) {
-      context.idMap = new Map();
-    }
-    if (!context.seenIdSet) {
-      context.seenIdSet = new Set();
+    if (!context.objectsById) {
+      context.objectsById = new Map();
     }
 
     switch (value.type) {
@@ -42,8 +43,6 @@ export default class UnsafeDecoder {
   }
 
   decodeBuiltin(value, context) {
-    const { idMap } = context;
-
     if (!value.name) {
       return this.onFailure(value, 'builtin is missing name', context);
     }
@@ -69,13 +68,13 @@ export default class UnsafeDecoder {
   }
 
   decodeSymbol(value, context) {
-    const { idMap, seenIdSet } = context;
+    const { objectsById } = context;
 
     if (!value.id) {
       return this.onFailure(value, 'symbol is missing id', context);
     }
 
-    const existing = idMap.get(value.id);
+    const existing = this.symbolsById.get(value.id);
     if (existing) {
       if (existing.description !== value.description) {
         return this.onFailure(value,
@@ -85,8 +84,8 @@ export default class UnsafeDecoder {
     }
 
     const sym = Symbol(value.description);
-    idMap.set(value.id, sym);
-    seenIdSet.add(value.id);
+    objectsById.set(value.id, sym);
+    this.symbolsById.set(value.id, sym);
     return sym;
   }
 
@@ -135,14 +134,13 @@ export default class UnsafeDecoder {
   }
 
   decodeOntoObject(value, target, context) {
-    const { idMap, seenIdSet } = context;
+    const { objectsById } = context;
 
-    if (seenIdSet.has(value.id)) {
+    if (objectsById.has(value.id)) {
       return this.onFailure(value, `id [${value.id}] has already been seen on another array, function, or object`, context);
     }
 
-    seenIdSet.add(value.id);
-    idMap.set(value.id, target);
+    objectsById.set(value.id, target);
 
     if (value.prototype !== undefined) {
       target = this.decodePrototypeOntoObject(value, target, context);
@@ -251,19 +249,15 @@ export default class UnsafeDecoder {
   }
 
   decodeRef(value, context) {
-    const { idMap, seenIdSet } = context;
+    const { objectsById } = context;
 
     if (!value.id) {
       return this.onFailure(value, 'ref is missing id', context);
     }
-
-    if (!seenIdSet.has(value.id)) {
-      return this.onFailure(value, `id [${value.id}] was first encountered on a ref`, context);
-    }
-
-    const target = idMap.get(value.id);
+    
+    const target = objectsById.get(value.id);
     if (!target) {
-      return this.onFailure(value, `ref id [${value.id}] not found in idMap`, context);
+      return this.onFailure(value, `id [${value.id}] was first encountered on a ref`, context);
     }
 
     return target;
