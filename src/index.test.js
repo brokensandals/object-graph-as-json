@@ -21,7 +21,7 @@ test('sample usage', () => {
   const serialized = JSON.stringify(encoded);
   const deserialized = JSON.parse(serialized);
 
-  // Decoding
+  // Decoding (this could be run in a different VM)
   const decoder = new UnsafeDecoder();
   const decoded = decoder.decode(deserialized);
   expect(decoded.current).toEqual(2);
