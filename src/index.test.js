@@ -36,7 +36,7 @@ test('one of the reasons UnsafeDecoder is unsafe', () => {
     type: 'function',
     id: '1',
     // Normally, a function's source would start with something like
-    // function(). Because this doesn't, the malicious code gets execute
+    // function(). Because this doesn't, the malicious code gets executed
     // as soon as we try to decode the input, even if we never try
     // to call the decoded function.
     source: 'Object.EVIL_THING_HAPPENED = true'
