@@ -1,7 +1,4 @@
-dist/
-esm/
-gen-src/
-lib/
+target/
 
 # Logs
 logs

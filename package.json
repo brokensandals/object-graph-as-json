@@ -2,15 +2,15 @@
   "name": "object-graph-as-json",
   "version": "1.0.0",
   "description": "Library for representing arbitrary javascript objects in JSON.",
-  "main": "lib/index.js",
-  "module": "esm/index.js",
+  "main": "target/cjs/index.js",
+  "module": "target/esm/index.js",
   "scripts": {
-    "build": "npm run clean && npm run build:embeddable && npm run build:gen:embed && npm run build:cjs && npm run build:esm",
-    "build:cjs": "BABEL_MODULES=cjs babel src/ gen-src/ --out-dir lib/ --ignore src/**/*.test.js",
-    "build:embeddable": "webpack --mode=production",
-    "build:gen:embed": "node scripts/build-embed-json.js",
-    "build:esm": "BABEL_MODULES=false babel src/ gen-src/ --out-dir esm/ --ignore src/**/*.test.js",
-    "clean": "rimraf esm dist gen-src lib",
+    "clean": "rimraf target",
+    "gen-src": "webpack --mode=production --env.embed && node scripts/build-embed-json.js",
+    "build:cjs": "BABEL_MODULES=cjs babel src/ target/gen-src/ --out-dir target/cjs/ --ignore src/**/*.test.js",
+    "build:esm": "BABEL_MODULES=false babel src/ target/gen-src/ --out-dir target/esm/ --ignore src/**/*.test.js",
+    "build:umd": "webpack --mode=production",
+    "build": "npm run clean && npm run gen-src && npm run build:cjs && npm run build:esm && npm run build:umd",
     "test": "jest",
     "test:watch": "jest --watch"
   },
@@ -38,9 +38,7 @@
     "webpack-cli": "^3.3.10"
   },
   "files": [
-    "dist",
-    "esm",
-    "lib",
-    "src"
+    "src",
+    "target"
   ]
 }
