@@ -21,7 +21,7 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, 'target', 'umd'),
       filename: 'object-graph-as-json.min.js',
-      library: ['OGAJ'],
+      library: 'OGAJ',
       libraryTarget: 'umd',
     },
   };

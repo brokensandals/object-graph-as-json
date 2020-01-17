@@ -24,7 +24,7 @@
     "serialize",
     "json"
   ],
-  "author": "Jacob Williams <jacobaw@gmail.com>",
+  "author": "Jacob Williams <jacobaw@gmail.com> (https://brokensandals.net)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/brokensandals/object-graph-as-json/issues"
