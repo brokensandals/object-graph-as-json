@@ -1,18 +1,82 @@
 import { builtinsByName } from './builtins';
 
+/**
+ * Takes an object graph encoded according to the spec in the README, and attempts
+ * to decode it back into javascript objects that are equivalent to the originals.
+ * 
+ * This is **UNSAFE** because, in order to recreate function objects, it evaluates
+ * code contained in the encoded objects. Don't use it unless you are 100% sure you
+ * trust the encoded objects! Just decoding them is dangerous, even if you never
+ * call the resulting functions! The decoder also follows the encoded objects' instructions
+ * to do things like set prototypes, define accessors, and set properties using well-known
+ * symbol keys, all of which could be manipulated to cause the resulting objects to behave
+ * in ways you might not be expecting, if you aren't careful.
+ * 
+ * Usage:
+ *   const decoder = new Decoder();
+ *   const result = decoder.decode(myEncodedObject);
+ * 
+ * The instance of Decoder remembers symbol IDs that it has seen before, and will decode them
+ * to the same Symbols each time. Other types of objects are _not_ reused across calls to decode().
+ * 
+ * If invalid data is detected, by default an error is thrown. You can override onFailure() and onKeyFailure()
+ * to change this behavior.
+ * 
+ * In the future, this should probably be supplemented by or replaced with a class that
+ * merely wraps the encoded graph and lets you access/traverse the parts you're interested in,
+ * without actually trying to recreate the original objects unless requested. But for now,
+ * if you need safer decoding, consider overriding the decodeFunction(), decodePrototypeOntoObject(),
+ * decodePropertiesOntoObject(), and decodePropertyValue() methods.
+ */
 export default class UnsafeDecoder {
   constructor() {
     this.symbolsById = new Map();
   }
 
+  /**
+   * This is called when decoding some part of the encoded graph fails. By default it
+   * simply throws an error. You can override it to fail gracefully. The return value
+   * will be inserted directly into the output at the point where the decoded value
+   * would have gone. Decoding will not be applied to the returned value.
+   * 
+   * If value.type === 'property', the return value should be a javascript property descriptor,
+   * or can be `undefined` to indicate the property should be omitted from the result object.
+   * @param {*} value the encoded value that failed to decode
+   * @param {*} message a description of the error
+   * @param {*} context for passing to recursive calls to decode()
+   * @returns {*} whatever you want to appear in the resulting object graph instead place of the decoded value
+   */
   onFailure(value, message, context) {
     throw new Error(message);
   }
 
+  /**
+   * This is called when decoding one of the keys of an object/array/function fails. By default
+   * it simply throws an error. You can override it to fail gracefully. The return value should be
+   * a string or symbol to use as the key instead of the decoded value, or `undefined` to indicate
+   * this property should be omitted from the result object.
+   * 
+   * Scenarios in which this might be called:
+   * - A key tries to refer to a well-known symbol, but the decoder doesn't recognize that symbol
+   * - A key refers to a symbol by ID, but the description doesn't match the previously seen description
+   *     for that symbol
+   * - A key is formatted like `"~|foo"`, where the symbol ID is missing
+   * @param {*} container the encoded object/array/function containing this property key
+   * @param {*} key the encoded property key (such as `"@Something"` or `"~2|something"`)
+   * @param {*} message 
+   * @param {*} context 
+   * @returns {undefined|string|Symbol} whatever you want to use as the key for this property
+   */
   onKeyFailure(container, key, message, context) {
     throw new Error(message);
   }
 
+  /**
+   * Builds a graph of javascript objects from a graph encoded according to the spec in the README.
+   * @param {*} value the top-level value of the encoded graph
+   * @param {*} context used in recursive decoding; omit when calling from outside this class
+   * @returns {*} the decoded value
+   */
   decode(value, context = {}) {
     if (typeof value !== 'object' || value === null) {
       return value;
