@@ -1,6 +1,6 @@
 import { builtinsByValue } from './builtins';
 
-export class Encoder {
+export default class Encoder {
   constructor() {
     this.objectIds = new WeakMap();
     this.symbolIds = new Map();

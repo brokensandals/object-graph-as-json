@@ -2,8 +2,14 @@
   "name": "object-graph-as-json",
   "version": "1.0.0",
   "description": "Library for representing arbitrary javascript objects in JSON.",
-  "main": "src/index.js",
+  "main": "lib/index.js",
+  "module": "esm/index.js",
   "scripts": {
+    "build": "npm run clean && npm run build:commonjs && npm run build:embeddable && npm run build:esm",
+    "build:commonjs": "BABEL_MODULES=commonjs babel src/ --out-dir lib/ --ignore src/**/*.test.js",
+    "build:embeddable": "webpack --mode=production",
+    "build:esm": "BABEL_MODULES=false babel src/ --out-dir esm/ --ignore src/**/*.test.js",
+    "clean": "rimraf esm dist lib",
     "test": "jest",
     "test:watch": "jest --watch"
   },
@@ -22,8 +28,18 @@
   },
   "homepage": "https://github.com/brokensandals/object-graph-as-json#readme",
   "devDependencies": {
+    "@babel/cli": "^7.8.3",
     "@babel/core": "^7.8.3",
     "@babel/preset-env": "^7.8.3",
-    "jest": "^24.9.0"
-  }
+    "jest": "^24.9.0",
+    "rimraf": "^3.0.0",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
+  },
+  "files": [
+    "dist",
+    "esm",
+    "lib",
+    "src"
+  ]
 }
