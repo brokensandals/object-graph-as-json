@@ -10,7 +10,7 @@ Contents:
 1. [Goals](#goals)
 2. [Usage](#usage)
 3. [Spec](#spec)
-4. [Known Limitations](#known-limitations)
+4. [Status & Known Limitations](#status--known-limitations)
 5. [Development](#development)
 6. [Contributing](#contributing)
 7. [License](#license)
@@ -286,8 +286,10 @@ If the encoder encounters a value whose `typeof` it does not recognize, it simpl
 - `type` = `"unknown"`
 - `typeof`: The result of `typeof`.
 
-## Known Limitations
+## Status & Known Limitations
 
+- More types will likely be added in order to compactly represent things such as regexes.
+- Many more objects need to be added to the list of recognized builtins.
 - Recreating functions in general is janky.
   - Bound functions (i.e. the result of calling `.bind(...)` on a function) cannot be recreated from their encoded form.
   As far as I'm aware, javascript does not provide a way to programmatically determine that a function object is a bound function or to retrieve the bindings or the original function from a bound function.
@@ -295,8 +297,6 @@ If the encoder encounters a value whose `typeof` it does not recognize, it simpl
   - Variable bindings from enclosing lexical scopes are not preserved.
   - The current UnsafeDecoder implementation assumes that the source code of the function is a valid function declaration, expression, or arrow function expression.
     But depending on your execution environment, calling toString() on a method (which is what the encoder does to determine the source code) may result in a string that starts with the method name instead.
-- More types should likely be added in order to compactly represent things such as regexes.
-- Many more objects need to be added to the list of recognized builtins.
 - An instance of `Encoder` or `UnsafeDecoder` will never forget a symbol that it has seen.
   If you use long-lived instances of these, and for some reason your program produces large numbers of new symbols which are included in objects that it encodes, this is a memory leak.
 
