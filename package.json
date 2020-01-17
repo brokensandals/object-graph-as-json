@@ -13,6 +13,7 @@
     "build": "npm run clean && npm run gen-src && npm run build:cjs && npm run build:esm && npm run build:umd",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:updateSnapshot": "jest --updateSnapshot",
     "prepublish": "npm run build"
   },
   "repository": {
