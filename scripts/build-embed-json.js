@@ -11,5 +11,5 @@ if (!fs.existsSync(genSrcDir)) {
 }
 
 const json = JSON.stringify({ Encoder, UnsafeDecoder }, null, 2);
-const source = 'export default ' + json + ';';
+const source = `export default ${json};`;
 fs.writeFileSync(path.resolve(genSrcDir, 'embed.js'), source);
