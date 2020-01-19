@@ -1,5 +1,7 @@
 # object-graph-as-json
 
+[![Build Status](https://travis-ci.org/brokensandals/object-graph-as-json.svg?branch=master)](https://travis-ci.org/brokensandals/object-graph-as-json)
+
 Given an arbitrary javascript object, this library encodes it using only JSON-safe data types.
 Tools for decoding the data are provided too.
 
