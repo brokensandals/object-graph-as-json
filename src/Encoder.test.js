@@ -13,7 +13,7 @@ describe('Encoder', () => {
     for (const value of values) {
       test(`${value} encodes correctly`, () => {
         expect(encoder.encode(value)).toEqual(value);
-      })
+      });
     }
   });
 
@@ -25,7 +25,7 @@ describe('Encoder', () => {
 
       // undefined
       [undefined, 'undefined'],
-      
+
       // Well-known symbols - https://tc39.es/ecma262/#sec-well-known-symbols
       [Symbol.asyncIterator, 'Symbol.asyncIterator'],
       [Symbol.hasInstance, 'Symbol.hasInstance'],
@@ -81,7 +81,9 @@ describe('Encoder', () => {
       const sym2 = Symbol('meep');
       const expected1 = { type: 'symbol', id: '2', description: 'meep' };
       const expected2 = { ...expected1, id: '3' };
-      const input = { a: sym1, b: sym2, c: { d: sym1 }, e: sym2 };
+      const input = {
+        a: sym1, b: sym2, c: { d: sym1 }, e: sym2,
+      };
       const expected = {
         type: 'object',
         id: '1',
@@ -103,8 +105,8 @@ describe('Encoder', () => {
       expect(encoder.encode(['hello', 'world'])).toEqual({
         type: 'array',
         id: '1',
-        ".0": 'hello',
-        ".1": 'world',
+        '.0': 'hello',
+        '.1': 'world',
       });
     });
 
@@ -354,10 +356,10 @@ describe('Encoder', () => {
             value: { type: 'builtin', name: 'Object' },
             writable: true,
           },
-        }
+        },
       });
       expect(foo.toString()).toEqual('boo');
-      expect(encoded.source).toEqual('function foo(a, b) {\n        return a + b;\n      }')
+      expect(encoded.source).toEqual('function foo(a, b) {\n        return a + b;\n      }');
     });
 
     test('with extra properties', () => {
@@ -410,7 +412,7 @@ describe('Encoder', () => {
         '.foo': 'bar',
       });
     });
-    
+
     test('with different prototype', () => {
       const obj = { foo: 'bar' };
       Object.setPrototypeOf(obj, Function);
@@ -853,7 +855,7 @@ describe('Encoder', () => {
             },
             configurable: true,
             enumerable: true,
-          }
+          },
         });
       });
     });

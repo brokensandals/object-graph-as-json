@@ -3,7 +3,7 @@ import { builtinsByName } from './builtins';
 /**
  * Takes an object graph encoded according to the spec in the README, and attempts
  * to decode it back into javascript objects that are equivalent to the originals.
- * 
+ *
  * This is **UNSAFE** because, in order to recreate function objects, it evaluates
  * code contained in the encoded objects. Don't use it unless you are 100% sure you
  * trust the encoded objects! Just decoding them is dangerous, even if you never
@@ -11,17 +11,17 @@ import { builtinsByName } from './builtins';
  * to do things like set prototypes, define accessors, and set properties using well-known
  * symbol keys, all of which could be manipulated to cause the resulting objects to behave
  * in ways you might not be expecting, if you aren't careful.
- * 
+ *
  * Usage:
  *   const decoder = new Decoder();
  *   const result = decoder.decode(myEncodedObject);
- * 
+ *
  * The instance of Decoder remembers symbol IDs that it has seen before, and will decode them
  * to the same Symbols each time. Other types of objects are _not_ reused across calls to decode().
- * 
+ *
  * If invalid data is detected, by default an error is thrown. You can override onFailure() and onKeyFailure()
  * to change this behavior.
- * 
+ *
  * In the future, this should probably be supplemented by or replaced with a class that
  * merely wraps the encoded graph and lets you access/traverse the parts you're interested in,
  * without actually trying to recreate the original objects unless requested. But for now,
@@ -38,7 +38,7 @@ export default class UnsafeDecoder {
    * simply throws an error. You can override it to fail gracefully. The return value
    * will be inserted directly into the output at the point where the decoded value
    * would have gone. Decoding will not be applied to the returned value.
-   * 
+   *
    * If value.type === 'property', the return value should be a javascript property descriptor,
    * or can be `undefined` to indicate the property should be omitted from the result object.
    * @param {*} value the encoded value that failed to decode
@@ -55,7 +55,7 @@ export default class UnsafeDecoder {
    * it simply throws an error. You can override it to fail gracefully. The return value should be
    * a string or symbol to use as the key instead of the decoded value, or `undefined` to indicate
    * this property should be omitted from the result object.
-   * 
+   *
    * Scenarios in which this might be called:
    * - A key tries to refer to a well-known symbol, but the decoder doesn't recognize that symbol
    * - A key refers to a symbol by ID, but the description doesn't match the previously seen description
@@ -63,8 +63,8 @@ export default class UnsafeDecoder {
    * - A key is formatted like `"~|foo"`, where the symbol ID is missing
    * @param {*} container the encoded object/array/function containing this property key
    * @param {*} key the encoded property key (such as `"@Something"` or `"~2|something"`)
-   * @param {*} message 
-   * @param {*} context 
+   * @param {*} message
+   * @param {*} context
    * @returns {undefined|string|Symbol} whatever you want to use as the key for this property
    */
   onKeyFailure(container, key, message, context) {
@@ -158,7 +158,7 @@ export default class UnsafeDecoder {
       return this.onFailure(value, 'array is missing id', context);
     }
 
-    if (value['prototype']) {
+    if (value.prototype) {
       return this.onFailure(value, `array with id [${value.id}] has prototype property which should have been implied`, context);
     }
 
@@ -239,8 +239,7 @@ export default class UnsafeDecoder {
         const idEnd = key.indexOf('|');
         if (idEnd === 1) {
           targetKey = this.onKeyFailure(value, key, `key [${key}] is missing id`);
-        }
-        else {
+        } else {
           const fake = { type: 'symbol' };
           if (idEnd > 1) {
             fake.description = key.slice(idEnd + 1);
@@ -318,7 +317,7 @@ export default class UnsafeDecoder {
     if (!value.id) {
       return this.onFailure(value, 'ref is missing id', context);
     }
-    
+
     const target = objectsById.get(value.id);
     if (!target) {
       return this.onFailure(value, `id [${value.id}] was first encountered on a ref`, context);

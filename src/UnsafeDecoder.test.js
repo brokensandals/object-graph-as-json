@@ -23,7 +23,7 @@ describe('UnsafeDecoder', () => {
     for (const value of values) {
       test(`${value} decodes correctly`, () => {
         expect(encdec(value)).toEqual(value);
-      })
+      });
     }
   });
 
@@ -54,7 +54,8 @@ describe('UnsafeDecoder', () => {
   describe('bigints', () => {
     test('successful', () => {
       expect(encdec(BigInt('1234567890123456789012345678901234567890'))).toEqual(
-        BigInt('1234567890123456789012345678901234567890'));
+        BigInt('1234567890123456789012345678901234567890'),
+      );
     });
 
     test('no string', () => {
@@ -105,7 +106,7 @@ describe('UnsafeDecoder', () => {
     });
 
     test('no id', () => {
-      const input = { type: 'symbol', description: 'foo'};
+      const input = { type: 'symbol', description: 'foo' };
       expect(decoder.decode(input)).toEqual({
         value: input,
         failure: 'symbol is missing id',
@@ -321,7 +322,7 @@ describe('UnsafeDecoder', () => {
 
     test('with circular references', () => {
       const a = { name: 'a' };
-      a.b = { name: 'b' , a };
+      a.b = { name: 'b', a };
       a.b.c = { name: 'c', a, b: a.b };
       a.a = a;
       const result = encdec(a);
@@ -388,9 +389,7 @@ describe('UnsafeDecoder', () => {
 
       test('invalid return from onKeyFailure', () => {
         const input = { type: 'object', id: 1, '@Array': 'foo' };
-        decoder.onKeyFailure = (value, key, message) => {
-          return {};
-        };
+        decoder.onKeyFailure = (value, key, message) => ({});
         expect(() => decoder.decode(input)).toThrow('onKeyFailure for key [@Array] did not return undefined, string, or symbol');
       });
     });
@@ -446,9 +445,7 @@ describe('UnsafeDecoder', () => {
         delete encoded['~2|MEEP'];
         encoded['~2|meep'] = 'bar';
         let err;
-        decoder.onFailure = (value, message) => {
-          return 'nope';
-        };
+        decoder.onFailure = (value, message) => 'nope';
         decoder.onKeyFailure = (value, key, message) => {
           err = [value, key, message];
           return 'fine';
@@ -465,9 +462,7 @@ describe('UnsafeDecoder', () => {
         delete encoded['~2|MEEP'];
         encoded['~2|meep'] = 'bar';
         let err;
-        decoder.onFailure = (value, message) => {
-          return 'nope';
-        };
+        decoder.onFailure = (value, message) => 'nope';
         decoder.onKeyFailure = (value, key, message) => {
           err = [value, key, message];
           return undefined;
@@ -483,12 +478,8 @@ describe('UnsafeDecoder', () => {
         decoder.decode(encoded);
         delete encoded['~2|MEEP'];
         encoded['~2|meep'] = 'bar';
-        decoder.onFailure = (value, message) => {
-          return 'nope';
-        };
-        decoder.onKeyFailure = (value, key, message) => {
-          return {};
-        };
+        decoder.onFailure = (value, message) => 'nope';
+        decoder.onKeyFailure = (value, key, message) => ({});
         expect(() => decoder.decode(encoded)).toThrow('onKeyFailure for key [~2|meep] did not return undefined, string, or symbol');
       });
     });
@@ -527,7 +518,7 @@ describe('UnsafeDecoder', () => {
           value: { nested: 'bar' },
         });
       });
-      
+
       test('writable only', () => {
         const original = {};
         Object.defineProperty(original, 'foo', {
@@ -552,7 +543,7 @@ describe('UnsafeDecoder', () => {
           '.foo': {
             type: 'property',
             writable: true,
-          }
+          },
         };
         let err;
         decoder.onFailure = (value, message) => {
@@ -581,7 +572,7 @@ describe('UnsafeDecoder', () => {
           '.foo': {
             type: 'property',
             writable: true,
-          }
+          },
         };
         let err;
         decoder.onFailure = (value, message) => {
@@ -599,7 +590,7 @@ describe('UnsafeDecoder', () => {
           '.foo': {
             type: 'property',
             writable: true,
-          }
+          },
         };
         let err;
         decoder.onFailure = (value, message) => {

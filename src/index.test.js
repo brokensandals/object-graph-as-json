@@ -1,4 +1,4 @@
-import { Encoder, UnsafeDecoder } from './';
+import { Encoder, UnsafeDecoder } from '.';
 
 test('sample usage', () => {
   // Sample object
@@ -6,12 +6,12 @@ test('sample usage', () => {
     current: 1,
     increment() {
       this.current++;
-    }
+    },
   };
   counter.increment();
 
   expect(counter.current).toEqual(2);
-  
+
   // Encoding
   const encoder = new Encoder();
   const encoded = encoder.encode(counter);
@@ -39,7 +39,7 @@ test('one of the reasons UnsafeDecoder is unsafe', () => {
     // function(). Because this doesn't, the malicious code gets executed
     // as soon as we try to decode the input, even if we never try
     // to call the decoded function.
-    source: 'Object.EVIL_THING_HAPPENED = true'
+    source: 'Object.EVIL_THING_HAPPENED = true',
   };
 
   new UnsafeDecoder().decode(maliciousInput);
