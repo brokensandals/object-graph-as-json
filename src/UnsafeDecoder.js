@@ -19,14 +19,14 @@ import { builtinsByName } from './builtins';
  * The instance of Decoder remembers symbol IDs that it has seen before, and will decode them
  * to the same Symbols each time. Other types of objects are _not_ reused across calls to decode().
  *
- * If invalid data is detected, by default an error is thrown. You can override onFailure() and onKeyFailure()
- * to change this behavior.
+ * If invalid data is detected, by default an error is thrown.
+ * You can override onFailure() and onKeyFailure() to change that behavior.
  *
  * In the future, this should probably be supplemented by or replaced with a class that
  * merely wraps the encoded graph and lets you access/traverse the parts you're interested in,
  * without actually trying to recreate the original objects unless requested. But for now,
- * if you need safer decoding, consider overriding the decodeFunction(), decodePrototypeOntoObject(),
- * decodePropertiesOntoObject(), and decodePropertyValue() methods.
+ * if you need safer decoding, consider overriding the decodeFunction(),
+ * decodePrototypeOntoObject(), decodePropertiesOntoObject(), and decodePropertyValue() methods.
  */
 export default class UnsafeDecoder {
   constructor() {
@@ -44,9 +44,10 @@ export default class UnsafeDecoder {
    * @param {*} value the encoded value that failed to decode
    * @param {*} message a description of the error
    * @param {*} context for passing to recursive calls to decode()
-   * @returns {*} whatever you want to appear in the resulting object graph instead place of the decoded value
+   * @returns {*} whatever you want to appear in the resulting object graph
+   *   instead of the decoded value
    */
-  onFailure(value, message, context) {
+  onFailure(value, message, context) { // eslint-disable-line no-unused-vars,class-methods-use-this
     throw new Error(message);
   }
 
@@ -58,8 +59,8 @@ export default class UnsafeDecoder {
    *
    * Scenarios in which this might be called:
    * - A key tries to refer to a well-known symbol, but the decoder doesn't recognize that symbol
-   * - A key refers to a symbol by ID, but the description doesn't match the previously seen description
-   *     for that symbol
+   * - A key refers to a symbol by ID, but the description doesn't match the
+   *     previously seen description for that symbol
    * - A key is formatted like `"~|foo"`, where the symbol ID is missing
    * @param {*} container the encoded object/array/function containing this property key
    * @param {*} key the encoded property key (such as `"@Something"` or `"~2|something"`)
@@ -67,7 +68,7 @@ export default class UnsafeDecoder {
    * @param {*} context
    * @returns {undefined|string|Symbol} whatever you want to use as the key for this property
    */
-  onKeyFailure(container, key, message, context) {
+  onKeyFailure(container, key, message, context) { // eslint-disable-line no-unused-vars,class-methods-use-this,max-len
     throw new Error(message);
   }
 
@@ -83,7 +84,7 @@ export default class UnsafeDecoder {
     }
 
     if (!context.objectsById) {
-      context.objectsById = new Map();
+      context.objectsById = new Map(); // eslint-disable-line no-param-reassign
     }
 
     switch (value.type) {
@@ -181,7 +182,7 @@ export default class UnsafeDecoder {
     const wrapper = `return (${value.source});`;
     let fn;
     try {
-      fn = (new Function(wrapper))();
+      fn = (new Function(wrapper))(); // eslint-disable-line no-new-func
     } catch (err) {
       return this.onFailure(value, `function with id [${value.id}] could not be constructed: ${err}`, context);
     }
@@ -207,9 +208,11 @@ export default class UnsafeDecoder {
     objectsById.set(value.id, target);
 
     if (value.prototype !== undefined) {
+      // eslint-disable-next-line no-param-reassign
       target = this.decodePrototypeOntoObject(value, target, context);
     }
 
+    // eslint-disable-next-line no-param-reassign
     target = this.decodePropertiesOntoObject(value, target, context);
 
     return target;
@@ -223,7 +226,7 @@ export default class UnsafeDecoder {
   }
 
   decodePropertiesOntoObject(value, target, context) {
-    for (const key of Object.keys(value)) {
+    Object.keys(value).forEach((key) => {
       let targetKey;
       if (key.startsWith('.')) {
         targetKey = key.slice(1);
@@ -259,7 +262,7 @@ export default class UnsafeDecoder {
       // In case targetKey was set to the result of onKeyFailure, make sure it's
       // something we can use.
       if (targetKey === undefined) {
-        continue;
+        return;
       }
       if (typeof targetKey !== 'string' && typeof targetKey !== 'symbol') {
         throw new Error(`onKeyFailure for key [${key}] did not return undefined, string, or symbol`);
@@ -269,7 +272,7 @@ export default class UnsafeDecoder {
       if (descriptor !== undefined) {
         Object.defineProperty(target, targetKey, descriptor);
       }
-    }
+    });
 
     return target;
   }

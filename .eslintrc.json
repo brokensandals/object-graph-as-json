@@ -9,6 +9,7 @@
   ],
   "globals": {
       "Atomics": "readonly",
+      "BigInt": true,
       "SharedArrayBuffer": "readonly"
   },
   "overrides": [{

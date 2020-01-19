@@ -28,7 +28,9 @@ export default class Encoder {
    *   context of this Encoder instance
    */
   generateId() {
-    return (this.nextId++).toString();
+    const id = this.nextId;
+    this.nextId += 1;
+    return id.toString();
   }
 
   /**
@@ -76,8 +78,10 @@ export default class Encoder {
    */
   encode(value) {
     let refIds = null;
+    let recurse;
+    let encodeProp;
 
-    const encodeProp = (desc) => {
+    encodeProp = (desc) => { // eslint-disable-line prefer-const
       if (desc.writable && desc.enumerable && desc.configurable
         && !desc.get && !desc.set) {
         return recurse(desc.value);
@@ -104,7 +108,7 @@ export default class Encoder {
       return prop;
     };
 
-    const recurse = (value) => {
+    recurse = (value) => { // eslint-disable-line prefer-const,no-shadow
       if (value === null) {
         return null;
       }
@@ -158,6 +162,7 @@ export default class Encoder {
             const lengthDesc = Object.getOwnPropertyDescriptor(value, 'length');
             const lengthIndex = propNames.indexOf('length');
             if (lengthDesc
+                  // eslint-disable-next-line eqeqeq
                   && propNames[lengthIndex - 1] == lengthDesc.value - 1
                   && lengthDesc.value >= 0) {
               result.type = 'array';
@@ -174,17 +179,17 @@ export default class Encoder {
             result.prototype = recurse(prototype);
           }
 
-          for (const name of propNames) {
+          propNames.forEach((name) => {
             if (skipLengthProp && name === 'length') {
-              continue;
+              return;
             }
 
             const desc = Object.getOwnPropertyDescriptor(value, name);
             const newName = `.${name}`;
             result[newName] = encodeProp(desc);
-          }
+          });
 
-          for (const sym of propSyms) {
+          propSyms.forEach((sym) => {
             let newName;
             const symBuiltinName = builtinsByValue.get(sym);
             if (symBuiltinName) {
@@ -199,7 +204,7 @@ export default class Encoder {
             }
             const desc = Object.getOwnPropertyDescriptor(value, sym);
             result[newName] = encodeProp(desc);
-          }
+          });
 
           return result;
         }

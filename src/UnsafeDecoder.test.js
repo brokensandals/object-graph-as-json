@@ -20,19 +20,19 @@ describe('UnsafeDecoder', () => {
   describe('values that encode to themselves', () => {
     const values = [null, false, true, 0, -100, 200, 10.5, '', 'hello'];
 
-    for (const value of values) {
+    values.forEach((value) => {
       test(`${value} decodes correctly`, () => {
         expect(encdec(value)).toEqual(value);
       });
-    }
+    });
   });
 
   describe('builtins', () => {
-    for (const [obj, key] of builtins) {
+    builtins.forEach(([obj, key]) => {
       test(`${key}`, () => {
         expect(encdec(obj)).toBe(obj);
       });
-    }
+    });
 
     test('no name', () => {
       const input = { type: 'builtin' };
@@ -77,7 +77,7 @@ describe('UnsafeDecoder', () => {
 
   describe('symbols', () => {
     test('successful', () => {
-      const original = Symbol();
+      const original = Symbol(); // eslint-disable-line symbol-description
       const actual = encdec(original);
       expect(actual).not.toBe(original);
       expect(typeof actual).toEqual('symbol');
@@ -91,13 +91,13 @@ describe('UnsafeDecoder', () => {
     });
 
     test('reuses symbols across decodings', () => {
-      const original = Symbol();
+      const original = Symbol(); // eslint-disable-line symbol-description
       expect(encdec(original)).toBe(encdec(original));
     });
 
     test('reuses symbols within a decoding', () => {
-      const sym1 = Symbol();
-      const sym2 = Symbol();
+      const sym1 = Symbol(); // eslint-disable-line symbol-description
+      const sym2 = Symbol(); // eslint-disable-line symbol-description
       const original = [sym1, sym2, sym1];
       const result = encdec(original);
       expect(result).toHaveLength(3);
@@ -389,14 +389,14 @@ describe('UnsafeDecoder', () => {
 
       test('invalid return from onKeyFailure', () => {
         const input = { type: 'object', id: 1, '@Array': 'foo' };
-        decoder.onKeyFailure = (value, key, message) => ({});
+        decoder.onKeyFailure = () => ({});
         expect(() => decoder.decode(input)).toThrow('onKeyFailure for key [@Array] did not return undefined, string, or symbol');
       });
     });
 
     describe('other symbol properties', () => {
       test('without description', () => {
-        const original = { [Symbol()]: 'bar' };
+        const original = { [Symbol()]: 'bar' }; // eslint-disable-line symbol-description
         const result = encdec(original);
         const syms = Object.getOwnPropertySymbols(result);
         expect(syms).toHaveLength(1);
@@ -445,7 +445,7 @@ describe('UnsafeDecoder', () => {
         delete encoded['~2|MEEP'];
         encoded['~2|meep'] = 'bar';
         let err;
-        decoder.onFailure = (value, message) => 'nope';
+        decoder.onFailure = () => 'nope';
         decoder.onKeyFailure = (value, key, message) => {
           err = [value, key, message];
           return 'fine';
@@ -462,7 +462,7 @@ describe('UnsafeDecoder', () => {
         delete encoded['~2|MEEP'];
         encoded['~2|meep'] = 'bar';
         let err;
-        decoder.onFailure = (value, message) => 'nope';
+        decoder.onFailure = () => 'nope';
         decoder.onKeyFailure = (value, key, message) => {
           err = [value, key, message];
           return undefined;
@@ -478,8 +478,8 @@ describe('UnsafeDecoder', () => {
         decoder.decode(encoded);
         delete encoded['~2|MEEP'];
         encoded['~2|meep'] = 'bar';
-        decoder.onFailure = (value, message) => 'nope';
-        decoder.onKeyFailure = (value, key, message) => ({});
+        decoder.onFailure = () => 'nope';
+        decoder.onKeyFailure = () => ({});
         expect(() => decoder.decode(encoded)).toThrow('onKeyFailure for key [~2|meep] did not return undefined, string, or symbol');
       });
     });

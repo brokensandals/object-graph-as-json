@@ -5,7 +5,7 @@ test('sample usage', () => {
   const counter = {
     current: 1,
     increment() {
-      this.current++;
+      this.current += 1;
     },
   };
   counter.increment();

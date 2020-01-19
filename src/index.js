@@ -1,4 +1,4 @@
-import builtins from './builtins';
+import { builtins } from './builtins';
 import Encoder from './Encoder';
 import UnsafeDecoder from './UnsafeDecoder';
 

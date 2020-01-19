@@ -10,11 +10,11 @@ describe('Encoder', () => {
   describe('values that encode to themselves', () => {
     const values = [null, false, true, 0, -100, 200, 10.5, '', 'hello'];
 
-    for (const value of values) {
+    values.forEach((value) => {
       test(`${value} encodes correctly`, () => {
         expect(encoder.encode(value)).toEqual(value);
       });
-    }
+    });
   });
 
   describe('builtins', () => {
@@ -42,11 +42,11 @@ describe('Encoder', () => {
       [Symbol.unscopables, 'Symbol.unscopables'],
     ];
 
-    for (const [value, expected] of tests) {
+    tests.forEach(([value, expected]) => {
       test(`${typeof value === 'symbol' ? value.description : value} encodes correctly`, () => {
         expect(encoder.encode(value)).toEqual({ type: 'builtin', name: expected });
       });
-    }
+    });
   });
 
   test('BigInts encode correctly', () => {
@@ -358,6 +358,7 @@ describe('Encoder', () => {
           },
         },
       });
+      expect(called).toBeFalsy();
       expect(foo.toString()).toEqual('boo');
       expect(encoded.source).toEqual('function foo(a, b) {\n        return a + b;\n      }');
     });
@@ -652,7 +653,7 @@ describe('Encoder', () => {
     describe('symbol properties', () => {
       test('no description and empty description are different', () => {
         const obj = {};
-        const sym1 = Symbol();
+        const sym1 = Symbol(); // eslint-disable-line symbol-description
         const sym2 = Symbol('');
         obj[sym1] = 'val1';
         obj[sym2] = 'val2';
