@@ -29,6 +29,13 @@ export const builtins = [
   [Object.prototype, 'Object.prototype'],
 ];
 
+if (typeof window !== 'undefined') {
+  builtins.push([window, 'window']);
+}
+if (typeof global !== 'undefined') {
+  builtins.push([global, 'global']);
+}
+
 export const builtinsByValue = new Map(builtins);
 export const builtinsByName = new Map(builtins.map(([a, b]) => [b, a]));
 

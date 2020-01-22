@@ -183,8 +183,19 @@ export default class Encoder {
             if (skipLengthProp && name === 'length') {
               return;
             }
-
-            const desc = Object.getOwnPropertyDescriptor(value, name);
+            let desc;
+            try {
+              desc = Object.getOwnPropertyDescriptor(value, name);
+            } catch (error) {
+              if (error instanceof TypeError
+                  && typeof value === 'function'
+                  && name === 'caller') {
+                // This works around https://github.com/brokensandals/object-graph-as-json/issues/1
+                // but was only tested on Safari, and I don't fully understand what's going on.
+                return;
+              }
+              throw error;
+            }
             const newName = `.${name}`;
             result[newName] = encodeProp(desc);
           });
