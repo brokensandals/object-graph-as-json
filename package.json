@@ -1,6 +1,6 @@
 {
   "name": "object-graph-as-json",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Library for representing arbitrary javascript objects in JSON.",
   "main": "target/cjs/index.js",
   "module": "target/esm/index.js",
