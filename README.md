@@ -137,28 +137,6 @@ console.log(decoded.current); // 3
 UnsafeDecoder allows the input to run arbitrary code at decode time, as [demonstrated in src/index.test.js](src/index.test.js), so it is not suitable for use in most situations without modification.
 See [the jsdoc in src/UnsafeDecoder.js](src/UnsafeDecoder.js) for more info.
 
-### Embedding
-
-I have a specific use case for this project where I need to inject the Encoder into a piece of javascript code that I have as a string.
-For this purpose, it's useful to have the source code of the encoder as a string, in a form that is standalone and can be isolated from the code it's being injected into.
-
-Therefore, the build produces an extra file, `embed.js`, whose default export is an object containing two fields, `Encoder` and `UnsafeDecoder`.
-Each contains a string of javascript code that declares `var Encoder` or `var UnsafeDecoder` and sets it to the encoder or decoder respectively.
-
-Example usage:
-
-```javascript
-import sources from 'object-graph-as-json/target/cjs/embed.js';
-
-const myCode = "const foo = {bar: 'baz'}";
-const wrappedCode = `
-  const Encoder = (function(){${sources.Encoder};return Encoder.default})();
-  ${myCode};
-  console.log(new Encoder().encode(foo));
-`;
-(0, eval)(wrappedCode); // logs { id: '1', type: 'object', '.bar': 'baz' }
-```
-
 ## Spec
 
 Numbers (excluding `NaN` and `Infinity`), strings, booleans, and `null` are unchanged by encoding.
@@ -313,7 +291,6 @@ Clone this repo and run `npm install` to install development dependencies.
 Run `npm test` or `npm test:watch` to run the unit tests.
 
 Run `npm build` to produce builds in the `target` folder targeting CommonJS, ECMAScript Modules, and UMD.
-This also generates the embed.js file [discussed above](#embedding).
 
 ## Contributing
 
