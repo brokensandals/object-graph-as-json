@@ -25,6 +25,7 @@ Contents:
 3. Be safe for automated tooling to inject at arbitrary points in a program without changing the program's behavior.
     - Therefore, property getters will not be called unless they are built-in parts of javascript that do not have side effects.
       (But the existence of the getter, and its function object, will be encoded.)
+    - As noted in the [limitations](#status--known-limitations) section, this goal is **not** necessarily achieved for `Proxy` objects.
 4. If desired, encode information about an object's identity.
     - Enables determining whether two encoded objects (whether they are otherwise identical or not) originated from the same in-memory object or not.
 5. Represent common object types in a way that minimizes the amount of visual noise for a human inspecting the encoded graph.
@@ -291,7 +292,8 @@ If the encoder encounters a value whose `typeof` it does not recognize, it simpl
 ## Status & Known Limitations
 
 - More types will likely be added in order to compactly represent things such as regexes.
-- Many more objects need to be added to the list of recognized builtins.
+- The encoder makes no attempt to detect whether an object is a `Proxy`; proxied objects will be encoded as the proxy handler presents them, and the proxy handler's traps may be invoked.
+- There are more objects that should be added to the list of recognized builtins.
 - Recreating functions in general is janky.
   - Bound functions (i.e. the result of calling `.bind(...)` on a function) cannot be recreated from their encoded form.
   As far as I'm aware, javascript does not provide a way to programmatically determine that a function object is a bound function or to retrieve the bindings or the original function from a bound function.
